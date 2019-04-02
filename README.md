@@ -1,13 +1,4 @@
 # Project Overview
-### Project name: [InstantDX](https://github.com/collateralized/instant-dutchx)
---------
-### Team members
-**Hilmar Orth (Hilmar X)** - [Twitter](https://twitter.com/hilmarxo), [Github](https://github.com/hilmarx), [Linkedin](https://www.linkedin.com/in/hilmarx/)
-
-**Luis Schliesske (Bytezantium)** - [Twitter](https://twitter.com/bytezantium), [Github](https://github.com/bytezantium), [LinkedIn](https://www.linkedin.com/in/schliesskeluis/)
-
--------
-### The Project 
 
 #### Abstract
 [Quote](https://blog.gnosis.pm/the-mechanism-design-of-the-gnosis-dutch-exchange-4299a045d523) by Nadja Beneš:
