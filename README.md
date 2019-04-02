@@ -1,7 +1,4 @@
-
-# Gnosis Grant Application
-
-## Project Overview
+# Project Overview
 ### Project name: [InstantDX](https://github.com/collateralized/instant-dutchx)
 --------
 ### Team members
