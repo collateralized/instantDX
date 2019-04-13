@@ -32,6 +32,11 @@ pragma solidity ^0.4.25;
      
      // units:
      // always state wei 
+     
+
+// Suggestions for Improvment:
+    // Variable names:
+        // payable1ToUser, payable2ToUser -> payable1ToSeller, payable2ToSeller
 
 
 contract PoolETH {
@@ -40,39 +45,30 @@ contract PoolETH {
     // gnoPool funds: wei: 100 ether initialised for DEMO
     uint public PoolFundsETH = 100000000000000000000 wei;
     
-    // The interest in ETH the PoolETH has accrued
+    // The interest in ETH the PoolETH is accruing
     uint public interestETH;
     
     // TO DO: fixed numbers - solidity floating point clarification
     fixed public InterestRateETH = 0.01;
     
     // For what follows: refer to payout formula stated atop the file
-    // lastAuctionPriceGNO == P0;
-    // hammerPriceGNO == P1;
-    // msg.value == Q;
-    // lvrETHGNO: loan-to-value ratio for ETH/GNO trading pair
+        // lastAuctionPriceGNO == P0;
+        // hammerPriceGNO == P1;
+        // msg.value == Q;
+        // lvrETHGNO: loan-to-value ratio for ETH/GNO trading pair
     
     // LVR = 80% - solidity does not fully support fixed value types yet: 
     // https://solidity.readthedocs.io/en/develop/types.html#fixed-point-numbers
-    fixed public lvrETHGNO = 0.8;  
+    fixed public lvrETHGNO = 0.8;
     
-    // Normally the last auction price and hammer price that follow  
-    //  would be modified by the InstantDX Escrow contract price oracle.
-    // For DEMO the prices are hardcoded.
+    // P0: Ask price the last Auction settled on: 
+    uint public lastAskGNO;
 
-    // P0: Ask price the last Auction settled on in wei: 
-    //  For DEMO: 1 GNO == 0.09753840 ETH - coinmarketcap 13 April 17:20 CEST
-    uint public lastPriceGNO = 97538400000000000 wei;
-    
-    // P1: the GNO price upon which the auction settles. 
-    //  For DEMO initialised and persisted at 0.1 ETH
-    uint public hammerPriceGNO = 100000000000000000 wei;
-    
     // Pool contract functionality:
     // 1. Pool verifies that sufficient funds are present to cover the initial instant payout
             //  sidenote: danger here due to blockchain asynchrony 
     // 2. Accepts seller tokens, if sufficient funds are present
-    modifier sufficientPoolFunds() {
+    modifier sufficientPoolFundsETH() {
         require(msg.value < PoolFundsETH - 1000000 wei,  // Leave 1 million wei in pool for gas fees 
                 "Denied: InstantDXPool insufficient funds"
         ); 
@@ -83,10 +79,10 @@ contract PoolETH {
     // Store all deployed escrowETH instances in mapping
     mapping(address => bool) public aliveEscrows;
     
-    function createEthEscrow(uint sellAmountGNO)  // msg.sender == seller
+    function createEscrowGNO(uint sellAmountGNO)  // msg.sender == seller
         public
         payable
-        sufficientPoolFunds
+        sufficientPoolFundsETH
     {
         address newEscrowGNO = new EscrowGNO(sellAmountGNO, msg.sender);
         aliveEscrows[newEscrowGNO] = true;
@@ -95,8 +91,8 @@ contract PoolETH {
         
         // 4. Pool pays out first payout (bridge loan) to the seller
         //  Payable1ToUser = P0 * Q * LVR
-        uint payable1toUser = lastPriceGNO * sellAmountGNO * lvrETHGNO;
-        msg.sender.transfer(Payable1toUser);
+        uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO;
+        msg.sender.transfer(payable1ToUserETH);
         
         // Possible event emittance here: trasnferredPayable1toUser
     }
@@ -106,25 +102,34 @@ contract PoolETH {
         
     // 6. Pool transfers the second payment to the seller after the auction ends.
     uint auctionReceivableETH;
-    uint payable2ToUser;
+    uint payable2ToUserETH;
     
     modifier escrowOnly() {
         require(aliveEscrows[msg.sender]);  // careful: asynchronous updates to mapping
         _;
     }
     
-    function update_LastPriceGNO_AuctionReceivable_Payable2ToUser_Interest(uint newPriceGNO, uint sellAmountGNO)
+    function update_LastPriceGNO_AuctionReceivable_Interest_transferPayable2(uint newAskGNO, uint sellAmountGNO, address beneficiary)
         external
         escrowOnly
     {
-        lastPriceGNO = newPriceGNO;
-        auctionReceivableETH = newPriceGNO * sellAmountGNO;
+        uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO;  // duplicate/redundant calc - improvement needed  
+        auctionReceivableETH = newAskGNO * sellAmountGNO;
+        uint _interestETH = sellAmountGNO * newAskGNO * InterestRateETH;  // local variable
         
+        payable2ToUserETH = auctionReceivableETH - payable1ToUserETH - _interestETH;
+        
+        lastAskGNO = newAskGNO; // state variable update
+        interestETH += _interestETH;  // state variable update
+        
+        beneficiary.transfer(payable2ToUserETH);  // Payout2
+        
+        // possible event emittance here: payout2Transferred
+        
+        aliveEscrows[msg.sender] = false;  // state variable update: kill escrow address
+        
+        // possible event emittance here: escrowDerigestered 
     }
-    
-    Payable2To
-    
-    
 }
 
 contract EscrowGNO {
