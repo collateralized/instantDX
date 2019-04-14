@@ -84,7 +84,7 @@ contract PoolETH {
     //  hence we need no custom getter function as we only have 2 array indices
     address[2] public aliveEscrows;
     mapping(address => bool) public mappingAliveEscrows;
-    bool aliveEscrowsToggler = false;  // toggle between 0 and 1
+    bool public aliveEscrowsToggler = false;  // toggle between 0 and 1
     
     // DEMO _minimumContribution: 1000000000000000000
     // DANGER: lastAsk specified by pool manager introduces weak subjectivity
@@ -163,12 +163,12 @@ contract PoolETH {
     }
     
     // 6. Pool deploys an individual escrow contract: if condition 1 and 2 are met
-    function createEscrowGNO(uint sellAmountGNO)  // msg.sender == seller
+    function createEscrowGNO()  // msg.sender == seller
         external
         payable
         sufficientPoolFundsETH
     {
-        address newEscrowGNO = new EscrowGNO(sellAmountGNO, msg.sender);
+        address newEscrowGNO = new EscrowGNO(msg.sender);
         
         // Logic: 2 escrows can be alive at same time and aliveEscrows[2] tracks them
         // DANGER: state variable update: overwrites/removes finished escrow address from aliveEscrows array
@@ -186,7 +186,7 @@ contract PoolETH {
         
         // 7. Pool pays out first payout (bridge loan) to the seller
         // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
-        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO;  // Non-DEMO Payable1ToUser = P0 * Q * LVR
+        uint payable1ToUserETH  = lastAskGNO * msg.value * lvrETHGNO;  // Non-DEMO Payable1ToUser = P0 * Q * LVR
         uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  // DEMO  
         msg.sender.transfer(DEMO_payable1ToUserETH);
         
@@ -198,7 +198,8 @@ contract PoolETH {
         _;
     }
     
-    function completedAuctionUpdate_transferPayable2(uint newAskGNO, uint sellAmountGNO, address beneficiary)
+    // EscrowGNO contract calls this function when auction ends
+    function completedAuctionUpdate_transferPayable2(uint newAskGNO, uint bidGNO, address beneficiary)
         external
         payable
         escrowOnly
@@ -210,14 +211,14 @@ contract PoolETH {
         
         // 9. Pool transfers the second payment to the seller after the auction ends.
         //Improvement proposal: save first calc in mapping(address => value) payable1ToUserETH and access here 
-        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO;  // duplicate/redundant calc - improvement needed:
+        uint payable1ToUserETH  = lastAskGNO * bidGNO * lvrETHGNO;  // duplicate/redundant calc - improvement needed:
         
         // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
         uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  // DEMO
 
-        uint auctionReceivableETH = newAskGNO * sellAmountGNO;
+        uint auctionReceivableETH = newAskGNO * bidGNO;
        
-        // non-DEMO: uint _interestETH = sellAmountGNO * newAskGNO * InterestRateETH;  // local variable
+        // non-DEMO: uint _interestETH = bidGNO * newAskGNO * InterestRateETH;  // local variable
         
         // TO DO: DEMO `5 finney` hardcoded to simulate floating point arithmetic of InterestRateETH
         uint DEMO_interestETH = 5 finney;  // DEMO
@@ -293,11 +294,68 @@ contract PoolETH {
 }
 
 contract EscrowGNO {
-    
-    
-    constructor(uint sellAmountGNO, address seller)
+    // deployed PoolETH contract parent: ABI of deployed parent needed
+    PoolETH poolETH;
+
+    address public beneficiary;
+
+    constructor(address _beneficiary)
         public
+        payable  // 1. Accepts funds from the pool contract: msg.value   
     {
+        poolETH = PoolETH(msg.sender);  // store function signatures of PoolETH contract 
+        beneficiary = _beneficiary;
+    }
+    
+    // 2. EscrowGNO sells the received GNO on the DutchX. - excluded in DEMO
+    
+    // 3. EscrowGNO receives the bought ETH at newAsk.
+    // 4. EscrowGNO transfers boughtETH to PoolETH and updates PoolETH's lastAskGNO
+    // This function is to be called by DutchX feed
+    function settle(uint newAskGNO)
+        external
+        payable
+    {
+        // ABI of deployed parent needed:
+        //  https://medium.com/@blockchain101/calling-the-function-of-another-contract-in-solidity-f9edfa921f4c
+        //  callback: completedAuctionUpdate_transferPayable2(uint newAskGNO, uint bidGNO, address beneficiary)
+        poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, msg.value, beneficiary); 
         
+        // TBD: possible event emittance here: EscrowGNOSettled
+        
+        // TBD: need to kill the escrow
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
