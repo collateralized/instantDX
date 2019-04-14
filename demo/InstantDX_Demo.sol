@@ -178,8 +178,9 @@ contract PoolETH {
         
         // 7. Pool pays out first payout (bridge loan) to the seller
         // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
-        uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO - 1 ether;  //  Payable1ToUser = P0 * Q * LVR
-        msg.sender.transfer(payable1ToUserETH);
+        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO;  // Non-DEMO Payable1ToUser = P0 * Q * LVR
+        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  // DEMO  
+        msg.sender.transfer(DEMO_payable1ToUserETH);
         
         // Possible event emission here: trasnferredPayable1toUser
     }
@@ -200,25 +201,31 @@ contract PoolETH {
         // possible event emission: auctionFundsTransferred
         
         // 9. Pool transfers the second payment to the seller after the auction ends.
-        // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
-        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO - 1 ether ;  // duplicate/redundant calc - improvement needed:
-            //Improvement proposal: save first calc in mapping(address => value) payable1ToUserETH and access here 
-        uint auctionReceivableETH = newAskGNO * sellAmountGNO;
-        // TO DO: DEMO `- 5 finney` hardcoded to simulate floating point arithmetic of InterestRateETH
-        uint _interestETH = sellAmountGNO * newAskGNO * InterestRateETH - 5 finney;  // local variable
+        //Improvement proposal: save first calc in mapping(address => value) payable1ToUserETH and access here 
+        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO;  // duplicate/redundant calc - improvement needed:
         
-        uint payable2ToUserETH = auctionReceivableETH - payable1ToUserETH - _interestETH;
+        // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
+        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  // DEMO
+
+        uint auctionReceivableETH = newAskGNO * sellAmountGNO;
+       
+        // non-DEMO: uint _interestETH = sellAmountGNO * newAskGNO * InterestRateETH;  // local variable
+        
+        // TO DO: DEMO `5 finney` hardcoded to simulate floating point arithmetic of InterestRateETH
+        uint DEMO_interestETH = 5 finney;  // DEMO
+        
+        // non-DEMO: uint payable2ToUserETH = auctionReceivableETH - payable1ToUserETH - _interestETH;
+        
+        uint DEMO_payable2ToUserETH = auctionReceivableETH - DEMO_payable1ToUserETH - DEMO_interestETH;  // DEMO
         
         lastAskGNO = newAskGNO; // state variable update
-        accruedInterestETH += _interestETH;  // state variable update
-        
-        beneficiary.transfer(payable2ToUserETH);  // Payout2
+        // non-DEMO: accruedInterestETH += _interestETH;  // state variable update
+        accruedInterestETH += DEMO_interestETH;  // DEMO
+
+        // non-DEMO: beneficiary.transfer(payable2ToUserETH);
+        beneficiary.transfer(DEMO_payable2ToUserETH);  // DEMO Payout2
         
         // possible event emission here: payout2Transferred
-        
-        
-        
-        
 
         // possible event emission here: escrowDeregestered 
     }
