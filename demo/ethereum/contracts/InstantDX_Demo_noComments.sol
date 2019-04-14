@@ -1,17 +1,14 @@
 pragma solidity ^0.4.25;
 
+// lastAskGNO: 96529870000000000 wei
+
+// Contract PoolETH
 contract PoolETH {
     
     address public manager;
-    
-    
-    struct Provider {
-        address beneficiary;
-        uint stakeETH;
-    }
-    
-    Provider[] public providersETH;
-    mapping(address => uint) mappingProvidersETH;
+
+    address[] public providersETH;
+    mapping(address => uint) public mappingProvidersETH;
     
     modifier providersOnly() {
         require(mappingProvidersETH[msg.sender] > 0);
@@ -31,9 +28,9 @@ contract PoolETH {
     
     address[2] public aliveEscrows;
     mapping(address => bool) public mappingAliveEscrows;
-    bool public aliveEscrowsToggler = false;  
+    bool internal aliveEscrowsToggler = false;  
     
-    constructor(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)  
+    constructor(uint _minimumContribution, uint _lastAskGNO)  
         public
         payable  
     {
@@ -42,15 +39,10 @@ contract PoolETH {
         minimumContributionETH = _minimumContribution;  
         lastAskGNO = _lastAskGNO;
         
-        poolFundsETH = seedFunding;
-
-        Provider memory newProviderETH = Provider({
-            beneficiary: msg.sender,
-            stakeETH: msg.value
-        });
+        poolFundsETH = msg.value;
         
-        providersETH.push(newProviderETH);
-        mappingProvidersETH[msg.sender] = newProviderETH.stakeETH;
+        providersETH.push(msg.sender);
+        mappingProvidersETH[msg.sender] = msg.value;
     }
     
     modifier managerOnly() {
@@ -67,7 +59,7 @@ contract PoolETH {
         lvrETHGNO = _lvrETHGNO;
     }
     
-    function adjustInterestETH(uint _interestRateETH)  
+    function adjustInterestRateETH(uint _interestRateETH)  
         external
         managerOnly
     {
@@ -82,13 +74,17 @@ contract PoolETH {
                 "Denied: tx value below minimum contribution threshold"
         );
         
-        Provider memory newProviderETH = Provider({
-            beneficiary: msg.sender,
-            stakeETH: msg.value
-        });
+        poolFundsETH += msg.value;
         
-        providersETH.push(newProviderETH);
-        mappingProvidersETH[msg.sender] = newProviderETH.stakeETH;
+        if (mappingProvidersETH[msg.sender] == 0) { 
+            providersETH.push(msg.sender);
+            mappingProvidersETH[msg.sender] = msg.value;
+        }
+        
+        else {
+            mappingProvidersETH[msg.sender] += msg.value;    
+        }
+
     }
 
     modifier sufficientPoolFundsETH() {
@@ -105,9 +101,6 @@ contract PoolETH {
         sufficientPoolFundsETH
     {
         address newEscrowGNO = new EscrowGNO(msg.sender);
-        
-        
-        
         
         if (aliveEscrowsToggler) {  
             aliveEscrows[1] = newEscrowGNO;
@@ -158,18 +151,17 @@ contract PoolETH {
     
     function interestPayout() 
         external
-        
     {
         uint payableToProviders = accruedInterestETH / 2;  
 
         uint length = providersETH.length;
         
         for (uint i = 0; i < length; i++) {
-            Provider storage provider = providersETH[i];  
+            address provider = providersETH[i];  
             
             uint providerPayout = poolFundsETH / length;  
             
-            provider.beneficiary.transfer(providerPayout);
+            provider.transfer(providerPayout);
         }
         
         uint payableToReserve = payableToProviders;  
@@ -188,11 +180,12 @@ contract PoolETH {
         
         msg.sender.transfer(withdrawalAmount);
         
-        mappingProvidersETH[msg.sender] = 0;
+        mappingProvidersETH[msg.sender] -= withdrawalAmount;
         poolFundsETH -= withdrawalAmount;
     }
 }
 
+// Contract EscrowGNO
 contract EscrowGNO {
     PoolETH poolETH;
 
@@ -210,8 +203,8 @@ contract EscrowGNO {
         external
         payable
     {
-        poolETH.completedAuctionUpdate_transferPayable2(
-            newAskGNO, msg.value, beneficiary
-        ); 
+        poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, msg.value, beneficiary);
+                // .value(newAskGNO * msg.value)
+                // .gas(800)(); 
     }
 }

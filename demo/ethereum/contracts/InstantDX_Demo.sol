@@ -88,7 +88,8 @@ contract PoolETH {
     
     // DEMO _minimumContribution: 1000000000000000000
     // DANGER: lastAsk specified by pool manager introduces weak subjectivity
-    constructor(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)  
+    // Non_DEMO: Pass InterestRateETH and lvrETHGNO also
+    constructor(uint _minimumContribution, uint _lastAskGNO)  
         public
         payable  // optional 
     {
@@ -99,7 +100,7 @@ contract PoolETH {
         lastAskGNO = _lastAskGNO;
         
         // Optional: skin in the game: Provider here is Poolo manager account
-        poolFundsETH = seedFunding;
+        poolFundsETH = msg.value;
 
         Provider memory newProviderETH = Provider({
             beneficiary: msg.sender,
