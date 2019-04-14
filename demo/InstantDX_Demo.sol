@@ -72,6 +72,7 @@ contract PoolETH {
     // Should only hold max 2 escrows at the same time - ongoingAuctionEscrow and nextAuctionEscrow
     //  hence we need no custom getter function as we only have 2 array indices
     address[2] public aliveEscrows;
+    mapping(address => bool) public aliveEscrowsHT;
     bool aliveEscrowsToggler = false;  // toggle between 0 and 1
     
     constructor(uint _minimumContribution, uint seedFunding)
@@ -159,8 +160,9 @@ contract PoolETH {
         }
         
         aliveEscrows[0] = newEscrowGNO;
+        aliveEscrowsHT[newEscrowGNO] = true;
         aliveEscrowsToggler = true;  // Danger in case of transaction failure
-        
+
         // Possible event emission here: EscrowGNODeployed
         
         // 7. Pool pays out first payout (bridge loan) to the seller
@@ -172,7 +174,7 @@ contract PoolETH {
     }
 
     modifier escrowOnly() {
-        require(aliveEscrows[msg.sender]);  // careful: asynchronous updates to mapping
+        require(aliveEscrowsHT[msg.sender]);  // careful: asynchronous updates to mapping
         _;
     }
     
@@ -196,7 +198,7 @@ contract PoolETH {
         uint payable2ToUserETH = auctionReceivableETH - payable1ToUserETH - _interestETH;
         
         lastAskGNO = newAskGNO; // state variable update
-        interestETH += _interestETH;  // state variable update
+        accruedInterestETH += _interestETH;  // state variable update
         
         beneficiary.transfer(payable2ToUserETH);  // Payout2
         
@@ -204,9 +206,8 @@ contract PoolETH {
         
         
         // DANGER: state variable update: remove escrow address from aliveEscrows array
-        for (uint i = 0; i < 2; i++) {
-            aliveEscrows[i] == msg.sender ? aliveEscrows[i] = 0x0 : continue
-        }
+        aliveEscrows[0] == msg.sender ? aliveEscrows[0] = 0x0 : aliveEscrows[1] = 0x0;
+
         // possible event emission here: escrowDeregestered 
     }
     
