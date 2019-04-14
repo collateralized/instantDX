@@ -54,7 +54,7 @@ contract PoolETH {
     }
     
     Provider[] public providersETH;
-    mapping(address => uint) mappingProvidersETH;
+    mapping(address => bool) mappingProvidersETH;
     
     // Pool ETH funding and pots
     uint minimumContributionETH;  // DEMO: hardcode it at 1 ether
@@ -73,7 +73,7 @@ contract PoolETH {
     uint public lvrETHGNO = 1;  // TO DO: DEMO DEFAULT
     
     // Payout formula P0 == lastAskGNO: Ask price the last Auction settled on: 
-    uint public lastAskGNO;  // will be supplied in ether
+    uint public lastAskGNO; 
     
     // Should only hold max 2 escrows at the same time - ongoingAuctionEscrow and nextAuctionEscrow
     //  hence we need no custom getter function as we only have 2 array indices
@@ -102,7 +102,7 @@ contract PoolETH {
         });
         
         providersETH.push(newProviderETH);
-        mappingProvidersETH[msg.sender] = newProviderETH.stakeETH;
+        mappingProvidersETH[msg.sender] = true;
     }
     
     modifier managerOnly() {
@@ -143,7 +143,7 @@ contract PoolETH {
         });
         
         providersETH.push(newProviderETH);
-        mappingProvidersETH[msg.sender] = newProviderETH.stakeETH;
+        mappingProvidersETH[msg.sender] = true;
     }
 
     // 4. Pool verifies that sufficient funds are present to cover the initial instant payout
@@ -249,12 +249,9 @@ contract PoolETH {
         for (uint i = 0; i < length; i++) {
             Provider memory provider = providersETH[i];
             
-            // TBD: providerShare float problem
-            // Non-DEMO:
-            // uint providerShare = (provider.stakeETH / poolFundsETH) * 100;  // TBD: local variable here only for readability 
-            // uint providerPayout = payableToProviders / providerShare;  
-            
-            uint providerPayout = poolFundsETH / length;  // DEMO: no per stake basis 
+            // TBD: providerShare float problem: circumvented here
+            uint providerShare = (provider.stakeETH / poolFundsETH) * 100;  // TBD: local variable here only for readability 
+            uint providerPayout = payableToProviders / providerShare;  
             
             provider.beneficiary.transfer(providerPayout);
             
@@ -273,18 +270,6 @@ contract PoolETH {
     
 
     // 11 Funds withdrawal
-    function withdrawFromPool()
-        external
-    {
-        require(mappingProvidersETH[msg.sender] > 0);
-        uint stakeReceivable = mappingProvidersETH[msg.sender];
-        
-        msg.sender.transfer(stakeReceivable);
-        
-        mappingProvidersETH[msg.sender] = 0;
-        poolFundsETH -= stakeReceivable;
-    }
-    
     
 }
 
