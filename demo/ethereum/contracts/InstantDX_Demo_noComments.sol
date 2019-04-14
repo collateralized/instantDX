@@ -1,36 +1,48 @@
 pragma solidity ^0.4.25;
 
-/tra  doing .send()/.transfer()
-    /icele   /ahi tgps
-
-/td 
-a oH {
-    /leeiar
-
-    /usc arsneficiary;
+contract PoolETH {
+    
+    address public manager;
+    
+    
+    struct Provider {
+        address beneficiary;
         uint stakeETH;
     }
     
     Provider[] public providersETH;
-    mapping(address => bool) mappingProvidersETH;
+    mapping(address => uint) mappingProvidersETH;
     
-    /ldtbcudrestETH;
+    modifier providersOnly() {
+        require(mappingProvidersETH[msg.sender] > 0);
+        _;
+    }
+    
+    uint minimumContributionETH;  
+    uint public poolFundsETH;
+    uint public accruedInterestETH;
     uint public reserveFundsETH;
+    
+    uint public InterestRateETH = 1;  
 
+    uint public lvrETHGNO = 1;  
+
+    uint public lastAskGNO;  
     
-    /lttp trateETH = 1;  /D
-e n ic lastAskGNO; 
-    
-    /uxe eAcEscrow
-    /nume de] public aliveEscrows;
+    address[2] public aliveEscrows;
     mapping(address => bool) public mappingAliveEscrows;
-    bool aliveEscrowsToggler = false;  /gd 
-otu(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)  
+    bool public aliveEscrowsToggler = false;  
+    
+    constructor(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)  
         public
-        payable  /i  mito = _minimumContribution;  
+        payable  
+    {
+        manager = msg.sender;
+        
+        minimumContributionETH = _minimumContribution;  
         lastAskGNO = _lastAskGNO;
         
-        /iha oFnH = seedFunding;
+        poolFundsETH = seedFunding;
 
         Provider memory newProviderETH = Provider({
             beneficiary: msg.sender,
@@ -38,7 +50,7 @@ otu(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)
         });
         
         providersETH.push(newProviderETH);
-        mappingProvidersETH[msg.sender] = true;
+        mappingProvidersETH[msg.sender] = newProviderETH.stakeETH;
     }
     
     modifier managerOnly() {
@@ -48,13 +60,22 @@ otu(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)
         _;
     }
     
-    /PaeHi lHGNO)  /Dlf{  vGNO = _lvrETHGNO;
+    function adjustLVRETHGNO(uint _lvrETHGNO)  
+        external
+        managerOnly
+    {
+        lvrETHGNO = _lvrETHGNO;
     }
     
-    /PaentHu_interestRateETH)  /Dlf{  nstRateETH = _interestRateETH;
+    function adjustInterestETH(uint _interestRateETH)  
+        external
+        managerOnly
+    {
+        InterestRateETH = _interestRateETH;
     }
     
-    /Pidr(   public
+    function contribute()
+        external
         payable
     {
         require(msg.value >= minimumContributionETH,
@@ -67,62 +88,130 @@ otu(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)
         });
         
         providersETH.push(newProviderETH);
-        mappingProvidersETH[msg.sender] = true;
+        mappingProvidersETH[msg.sender] = newProviderETH.stakeETH;
     }
 
-    /Paula a
-            /dedrietFundsETH() {
-        /.atd
-       "Denied: InstantDXPool insufficient funds"
+    modifier sufficientPoolFundsETH() {
+        
+        require(msg.value < poolFundsETH,
+                "Denied: InstantDXPool insufficient funds"
         ); 
         _;
     }
     
-    /Pive  uon createEscrowGNO(uint sellAmountGNO)  /.r PnEH {
-        address newEscrowGNO = new EscrowGNO(sellAmountGNO, msg.sender);
+    function createEscrowGNO()  
+        external
+        payable
+        sufficientPoolFundsETH
+    {
+        address newEscrowGNO = new EscrowGNO(msg.sender);
         
-        /in t   ueoaicrows array
-        /G  l?u borted contract executions
+        
+        
+        
         if (aliveEscrowsToggler) {  
             aliveEscrows[1] = newEscrowGNO;
-            aliveEscrowsToggler = false;  /graEs]=EscrowGNO;
+            aliveEscrowsToggler = false;  
+        }
+        
+        aliveEscrows[0] = newEscrowGNO;
         mappingAliveEscrows[newEscrowGNO] = true;
-        aliveEscrowsToggler = true;  /gracvTG       uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO;  /-U r yboUserETH - 1 ether;  /Ose  si() {
-        require(mappingAliveEscrows[msg.sender]);  /eupccpeuctionUpdate_transferPayable2(uint newAskGNO, uint sellAmountGNO, address beneficiary)
+        aliveEscrowsToggler = true;  
+
+        uint payable1ToUserETH  = lastAskGNO * msg.value * lvrETHGNO;  
+        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+        msg.sender.transfer(DEMO_payable1ToUserETH);
+
+    }
+
+    modifier escrowOnly() {
+        require(mappingAliveEscrows[msg.sender]);  
+        _;
+    }
+    
+    function completedAuctionUpdate_transferPayable2(
+        uint newAskGNO, uint bidGNO, address beneficiary
+    )
         external
         payable
         escrowOnly
     {
-        /Pk   olsETH += msg.value;  /.ran   vbUrTd access here 
-        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO;  /l ccvTG       uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  /Oai 
--etE/
-eETH
-        uint DEMO_interestETH = 5 finney;  /O -e-ittETH;
         
-        uint DEMO_payable2ToUserETH = auctionReceivableETH - DEMO_payable1ToUserETH - DEMO_interestETH;  /O a f(Eayable2ToUserETH);  /O  eau(       public
-        managerOnly  /cesb {    / uss  /T
-  uint payableToProviders = accruedInterestETH / 2;  
+        poolFundsETH += msg.value;  
+    
+        uint payable1ToUserETH  = lastAskGNO * bidGNO * lvrETHGNO;  
+    
+        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+
+        uint auctionReceivableETH = newAskGNO * bidGNO; 
+        
+        uint DEMO_interestETH = 5 finney;  
+        
+        uint DEMO_payable2ToUserETH = auctionReceivableETH - DEMO_payable1ToUserETH - DEMO_interestETH;  
+        
+        lastAskGNO = newAskGNO; 
+        
+        accruedInterestETH += DEMO_interestETH;  
+
+        beneficiary.transfer(DEMO_payable2ToUserETH);  
+    }
+    
+    function interestPayout() 
+        external
+        
+    {
+        uint payableToProviders = accruedInterestETH / 2;  
 
         uint length = providersETH.length;
         
         for (uint i = 0; i < length; i++) {
-            Provider memory provider = providersETH[i];
+            Provider storage provider = providersETH[i];  
             
-            /:ftrraeprovider.stakeETH / poolFundsETH) * 100;  /: eeu=pleToProviders / providerShare;  
+            uint providerPayout = poolFundsETH / length;  
             
             provider.beneficiary.transfer(providerPayout);
-            
-            / cd o?    }
+        }
         
-        /1bs i aeToReserve = payableToProviders;  /:loaRev       
-        /dungt l        accruedInterestETH -= payableToProviders - payableToReserve;
+        uint payableToReserve = payableToProviders;  
+        reserveFundsETH += payableToReserve;
+
+        accruedInterestETH -= payableToProviders - payableToReserve;
     }
     
-
-    /F
-ci eountGNO, address seller)
-        public
+    function withdrawFromPool(uint withdrawalAmount)
+        external
+        providersOnly
     {
+        uint stakeReceivable = mappingProvidersETH[msg.sender];
         
+        require(withdrawalAmount <= stakeReceivable);
+        
+        msg.sender.transfer(withdrawalAmount);
+        
+        mappingProvidersETH[msg.sender] = 0;
+        poolFundsETH -= withdrawalAmount;
+    }
+}
+
+contract EscrowGNO {
+    PoolETH poolETH;
+
+    address public beneficiary;
+
+    constructor(address _beneficiary)
+        public
+        payable  
+    {
+        poolETH = PoolETH(msg.sender);  
+        beneficiary = _beneficiary;
+    }
+
+    function settle(uint newAskGNO)
+        external
+        payable
+    {
+        poolETH.completedAuctionUpdate_transferPayable2(
+            newAskGNO, msg.value, beneficiary
+        ); 
     }
 }
