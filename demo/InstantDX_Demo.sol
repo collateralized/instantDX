@@ -40,7 +40,10 @@ pragma solidity ^0.4.25;
 
 
 contract PoolETH {
+    // Pool manager: whoever deploys the instance of PoolETH
+    address public manager;
     
+    // Liquidity Provider struct and state variables
     struct Provider {
         address beneficiary;
         uint stakeETH;
@@ -49,12 +52,22 @@ contract PoolETH {
     Provider[] public providersETH;
     mapping(address => bool) checkProvidersETH;
     
+    // Pool ETH funding and pots
     uint minimumContributionETH;
     uint public poolFundsETH;
     uint public reserveFundsETH;
-    
     uint public accruedInterestETH;
+    
+    // PoolETH interest rate state variable
     fixed public InterestRateETH = 0.01;  // TO DO: fixed numbers - solidity floating point clarification
+    
+    // TO DO: solidity does not fully support fixed value types yet: 
+    // https://solidity.readthedocs.io/en/develop/types.html#fixed-point-numbers
+    // Payout formula: LVR == lvrETHGNO
+    fixed public lvrETHGNO = 0.8;
+    
+    // Payout formula P0 == lastAskGNO: Ask price the last Auction settled on: 
+    uint public lastAskGNO;
     
     // Should only hold max 2 escrows at the same time - ongoingAuctionEscrow and nextAuctionEscrow
     //  hence we need no custom getter function as we only have 2 array indices
@@ -64,12 +77,14 @@ contract PoolETH {
     constructor(uint _minimumContribution, uint seedFunding)
         public
     {
+        // Set Pool Manager
+        manager = msg.sender;
+        
         minimumContributionETH = _minimumContribution;
         
-        // Optional: skin in the game
+        // Optional: skin in the game: Provider here is Poolo manager account
         poolFundsETH = seedFunding;
-        
-        // Optional: Provider here is our company account
+
         Provider memory newProviderETH = Provider({
             beneficiary: msg.sender,
             stakeETH: msg.value
@@ -79,7 +94,28 @@ contract PoolETH {
         checkProvidersETH[msg.sender] = true;
     }
     
-    // 1. PoolETH allows liquidity providers to contribute 
+    modifier managerOnly() {
+        require(msg.sender == manager);
+        _;
+    }
+    
+    // 1 .PoolETH allows manager to adjust lvrETHGNO
+    function adjustLVRETHGNO(fixed _lvrETHGNO)
+        external
+        managerOnly
+    {
+        lvrETHGNO = _lvrETHGNO;
+    }
+    
+    // 2. PoolETH allows manager to adjust interest rate
+    function adjustInterestETH(fixed _interestRateETH)
+        external
+        managerOnly
+    {
+        InterestRateETH = _interestRateETH;
+    }
+    
+    // 3. PoolETH allows liquidity providers to contribute 
     function contribute()
         public
         payable
@@ -97,29 +133,18 @@ contract PoolETH {
         checkProvidersETH[msg.sender] = true;
     }
 
-    // For what follows: refer to payout formula stated atop the file
-        // lastAskGNO == P0;
-        // msg.value == Q;
-        // lvrETHGNO: loan-to-value ratio for ETH/GNO trading pair
-    
-    // TO DO: solidity does not fully support fixed value types yet: 
-    // https://solidity.readthedocs.io/en/develop/types.html#fixed-point-numbers
-    fixed public lvrETHGNO = 0.8;
-    
-    // P0: Ask price the last Auction settled on: 
-    uint public lastAskGNO;
-
-    // 2. Pool verifies that sufficient funds are present to cover the initial instant payout
+    // 4. Pool verifies that sufficient funds are present to cover the initial instant payout
             //  sidenote: danger here due to blockchain asynchrony 
-    // 3. Accepts seller tokens, if sufficient funds are present - msg.value == Q. 
+    // 5. Accepts seller tokens, if sufficient funds are present 
     modifier sufficientPoolFundsETH() {
+        // msg.value == Q in payout formula. 
         require(msg.value < poolFundsETH - 1000000 wei,  // Leave 1 million wei in pool for gas fees 
                 "Denied: InstantDXPool insufficient funds"
         ); 
         _;
     }
     
-    // 4. Pool deploys an individual escrow contract: if condition 1 and 2 are met
+    // 6. Pool deploys an individual escrow contract: if condition 1 and 2 are met
     function createEscrowGNO(uint sellAmountGNO)  // msg.sender == seller
         public
         payable
@@ -138,7 +163,7 @@ contract PoolETH {
         
         // Possible event emission here: EscrowGNODeployed
         
-        // 5. Pool pays out first payout (bridge loan) to the seller
+        // 7. Pool pays out first payout (bridge loan) to the seller
         //  Payable1ToUser = P0 * Q * LVR
         uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO;
         msg.sender.transfer(payable1ToUserETH);
@@ -157,12 +182,12 @@ contract PoolETH {
         escrowOnly
     {
         
-        // 6. Pool receives tokens after auction settlement from escrow contract
+        // 8. Pool receives tokens after auction settlement from escrow contract
         poolFundsETH += msg.value;  // msg.value = funds from auction
         
         // possible event emission: auctionFundsTransferred
         
-        // 7. Pool transfers the second payment to the seller after the auction ends.
+        // 9. Pool transfers the second payment to the seller after the auction ends.
         uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO;  // duplicate/redundant calc - improvement needed:
             //Improvement proposal: save first calc in mapping(address => value) payable1ToUserETH and access here 
         uint auctionReceivableETH = newAskGNO * sellAmountGNO;
@@ -185,7 +210,7 @@ contract PoolETH {
         // possible event emission here: escrowDeregestered 
     }
     
-    // 7. Distributing interest among liquidity providers.
+    // 10. Distributing interest among liquidity providers.
     // TO DO
 
     
