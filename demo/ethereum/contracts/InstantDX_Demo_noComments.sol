@@ -9,13 +9,14 @@ contract PoolETH {
 
     address[] public providersETH;
     mapping(address => uint) public mappingProvidersETH;
-    
+    mapping(address => bool) public mappingProvidersBOOL;
+     
     modifier providersOnly() {
-        require(mappingProvidersETH[msg.sender] > 0);
+        require(mappingProvidersBOOL[msg.sender] == true);
         _;
     }
     
-    uint minimumContributionETH;  
+    uint public minimumContributionETH;  
     uint public poolFundsETH;
     uint public accruedInterestETH;
     uint public reserveFundsETH;
@@ -43,6 +44,7 @@ contract PoolETH {
         
         providersETH.push(msg.sender);
         mappingProvidersETH[msg.sender] = msg.value;
+        mappingProvidersBOOL[msg.sender] = true;
     }
     
     modifier managerOnly() {
@@ -65,7 +67,7 @@ contract PoolETH {
     {
         InterestRateETH = _interestRateETH;
     }
-    
+
     function contribute()
         external
         payable
@@ -76,19 +78,26 @@ contract PoolETH {
         
         poolFundsETH += msg.value;
         
-        if (mappingProvidersETH[msg.sender] == 0) { 
+        if (mappingProvidersBOOL[msg.sender] == false) { 
             providersETH.push(msg.sender);
             mappingProvidersETH[msg.sender] = msg.value;
+            mappingProvidersBOOL[msg.sender] = true;
         }
         
         else {
-            mappingProvidersETH[msg.sender] += msg.value;    
+            mappingProvidersETH[msg.sender] += msg.value;
         }
-
+    }
+    
+    function getProvidersETH()
+        public 
+        view 
+        returns (address[])
+    {
+        return providersETH;
     }
 
     modifier sufficientPoolFundsETH() {
-        
         require(msg.value < poolFundsETH,
                 "Denied: InstantDXPool insufficient funds"
         ); 
@@ -115,6 +124,14 @@ contract PoolETH {
         uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
         msg.sender.transfer(DEMO_payable1ToUserETH);
 
+    }
+
+    function getAliveEscrows()
+        public 
+        view 
+        returns (address[2])
+    {
+        return aliveEscrows;
     }
 
     modifier escrowOnly() {
@@ -179,6 +196,10 @@ contract PoolETH {
         require(withdrawalAmount <= stakeReceivable);
         
         msg.sender.transfer(withdrawalAmount);
+        
+        if (withdrawalAmount == mappingProvidersETH[msg.sender]) {
+            mappingProvidersBOOL[msg.sender] = false;
+        }
         
         mappingProvidersETH[msg.sender] -= withdrawalAmount;
         poolFundsETH -= withdrawalAmount;
