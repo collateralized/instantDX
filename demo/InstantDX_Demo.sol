@@ -18,6 +18,10 @@ pragma solidity ^0.4.25;
 // Solidity gotchas:
     // It is always best to let the recipients withdraw their money themselves, instead of using .send()/.transfer()
     // Variables can be declared anywhere, as Solidity uses hoisting at compile-time
+    
+    // Floating point arithmetic
+     // solidity `/` division operator always truncates (round to zero)
+     // use currency units for floating point arithmetic - EVM does not support floating points
 
 // InstantDX style guide:
     
@@ -50,7 +54,7 @@ contract PoolETH {
     }
     
     Provider[] public providersETH;
-    mapping(address => bool) checkProvidersETH;
+    mapping(address => bool) mappingProvidersETH;
     
     // Pool ETH funding and pots
     uint minimumContributionETH;
@@ -58,30 +62,33 @@ contract PoolETH {
     uint public reserveFundsETH;
     uint public accruedInterestETH;
     
-    // PoolETH interest rate state variable
-    fixed public InterestRateETH = 0.01;  // TO DO: fixed numbers - solidity floating point clarification
+    // PoolETH interest rate state variable: DEMO default value 1
+    // TO DO: fixed numbers - solidity floating point clarification
+    uint public InterestRateETH = 1;  // TO DO: DEMO DEFAULT
     
     // TO DO: solidity does not fully support fixed value types yet: 
     // https://solidity.readthedocs.io/en/develop/types.html#fixed-point-numbers
     // Payout formula: LVR == lvrETHGNO
-    fixed public lvrETHGNO = 0.8;
+    uint public lvrETHGNO = 1;  // TO DO: DEMO DEFAULT
     
     // Payout formula P0 == lastAskGNO: Ask price the last Auction settled on: 
-    uint public lastAskGNO;
+    uint public lastAskGNO;  // will be supplied in ether
     
     // Should only hold max 2 escrows at the same time - ongoingAuctionEscrow and nextAuctionEscrow
     //  hence we need no custom getter function as we only have 2 array indices
     address[2] public aliveEscrows;
-    mapping(address => bool) public aliveEscrowsHT;
+    mapping(address => bool) public mappingAliveEscrows;
     bool aliveEscrowsToggler = false;  // toggle between 0 and 1
     
-    constructor(uint _minimumContribution, uint seedFunding)
+    constructor(uint _minimumContribution, uint _lastAskGNO, uint seedFunding)
         public
+        payable  // optional 
     {
         // Set Pool Manager
         manager = msg.sender;
         
         minimumContributionETH = _minimumContribution;
+        lastAskGNO = _lastAskGNO;
         
         // Optional: skin in the game: Provider here is Poolo manager account
         poolFundsETH = seedFunding;
@@ -92,16 +99,18 @@ contract PoolETH {
         });
         
         providersETH.push(newProviderETH);
-        checkProvidersETH[msg.sender] = true;
+        mappingProvidersETH[msg.sender] = true;
     }
     
     modifier managerOnly() {
-        require(msg.sender == manager);
+        require(msg.sender == manager,
+                "Denied: only for Pool Manager"
+        );
         _;
     }
     
     // 1 .PoolETH allows manager to adjust lvrETHGNO
-    function adjustLVRETHGNO(fixed _lvrETHGNO)
+    function adjustLVRETHGNO(uint _lvrETHGNO)  // TO DO: DEMO uint: else fixed
         external
         managerOnly
     {
@@ -109,7 +118,7 @@ contract PoolETH {
     }
     
     // 2. PoolETH allows manager to adjust interest rate
-    function adjustInterestETH(fixed _interestRateETH)
+    function adjustInterestETH(uint _interestRateETH)  // TO DO: DEMO uint: else fixed
         external
         managerOnly
     {
@@ -122,7 +131,7 @@ contract PoolETH {
         payable
     {
         require(msg.value >= minimumContributionETH,
-                "Failed: tx value below minimum contribution threshold"
+                "Denied: tx value below minimum contribution threshold"
         );
         
         Provider memory newProviderETH = Provider({
@@ -131,7 +140,7 @@ contract PoolETH {
         });
         
         providersETH.push(newProviderETH);
-        checkProvidersETH[msg.sender] = true;
+        mappingProvidersETH[msg.sender] = true;
     }
 
     // 4. Pool verifies that sufficient funds are present to cover the initial instant payout
@@ -154,27 +163,29 @@ contract PoolETH {
         address newEscrowGNO = new EscrowGNO(sellAmountGNO, msg.sender);
         
         // Logic: 2 escrows can be alive at same time and aliveEscrows[2] tracks them
+        // DANGER: state variable update: overwrites/removes finished escrow address from aliveEscrows array
+        // DANGER: assumption: the toggler increment/decrement logic is safe - unlikely? due to aborted contract executions
         if (aliveEscrowsToggler) {  
             aliveEscrows[1] = newEscrowGNO;
             aliveEscrowsToggler = false;  // Danger in case of transaction failure
         }
         
         aliveEscrows[0] = newEscrowGNO;
-        aliveEscrowsHT[newEscrowGNO] = true;
+        mappingAliveEscrows[newEscrowGNO] = true;
         aliveEscrowsToggler = true;  // Danger in case of transaction failure
 
         // Possible event emission here: EscrowGNODeployed
         
         // 7. Pool pays out first payout (bridge loan) to the seller
-        //  Payable1ToUser = P0 * Q * LVR
-        uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO;
+        // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
+        uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO - 1 ether;  //  Payable1ToUser = P0 * Q * LVR
         msg.sender.transfer(payable1ToUserETH);
         
         // Possible event emission here: trasnferredPayable1toUser
     }
 
     modifier escrowOnly() {
-        require(aliveEscrowsHT[msg.sender]);  // careful: asynchronous updates to mapping
+        require(mappingAliveEscrows[msg.sender]);  // careful: asynchronous updates to mapping
         _;
     }
     
@@ -183,16 +194,18 @@ contract PoolETH {
         payable
         escrowOnly
     {
-        
+        // 8. Pool receives tokens after auction settlement from escrow contract
         poolFundsETH += msg.value;  // msg.value = funds from auction
         
         // possible event emission: auctionFundsTransferred
         
         // 9. Pool transfers the second payment to the seller after the auction ends.
-        uint payable1ToUserETH = lastAskGNO * sellAmountGNO * lvrETHGNO;  // duplicate/redundant calc - improvement needed:
+        // TO DO: DEMO `- 1 ether` hardcoded to simulate floating point arithmetic of lvrETHGNO
+        uint payable1ToUserETH  = lastAskGNO * sellAmountGNO * lvrETHGNO - 1 ether ;  // duplicate/redundant calc - improvement needed:
             //Improvement proposal: save first calc in mapping(address => value) payable1ToUserETH and access here 
         uint auctionReceivableETH = newAskGNO * sellAmountGNO;
-        uint _interestETH = sellAmountGNO * newAskGNO * InterestRateETH;  // local variable
+        // TO DO: DEMO `- 5 finney` hardcoded to simulate floating point arithmetic of InterestRateETH
+        uint _interestETH = sellAmountGNO * newAskGNO * InterestRateETH - 5 finney;  // local variable
         
         uint payable2ToUserETH = auctionReceivableETH - payable1ToUserETH - _interestETH;
         
@@ -204,8 +217,8 @@ contract PoolETH {
         // possible event emission here: payout2Transferred
         
         
-        // DANGER: state variable update: remove escrow address from aliveEscrows array
-        aliveEscrows[0] == msg.sender ? aliveEscrows[0] = 0x0 : aliveEscrows[1] = 0x0;
+        
+        
 
         // possible event emission here: escrowDeregestered 
     }
@@ -215,9 +228,6 @@ contract PoolETH {
 
     
 
-    
-    
-    
     
     // 
     
