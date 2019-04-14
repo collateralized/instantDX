@@ -184,7 +184,6 @@ contract PoolETH {
         escrowOnly
     {
         
-        // 8. Pool receives tokens after auction settlement from escrow contract
         poolFundsETH += msg.value;  // msg.value = funds from auction
         
         // possible event emission: auctionFundsTransferred
