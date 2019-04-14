@@ -56,6 +56,11 @@ contract PoolETH {
     Provider[] public providersETH;
     mapping(address => uint) mappingProvidersETH;
     
+    modifier providersOnly() {
+        require(mappingProvidersETH[msg.sender] > 0);
+        _;
+    }
+    
     // Pool ETH funding and pots
     uint minimumContributionETH;  // DEMO: hardcode it at 1 ether
     uint public poolFundsETH;
@@ -130,7 +135,7 @@ contract PoolETH {
     
     // 3. PoolETH allows liquidity providers to contribute 
     function contribute()
-        public
+        external
         payable
     {
         require(msg.value >= minimumContributionETH,
@@ -159,7 +164,7 @@ contract PoolETH {
     
     // 6. Pool deploys an individual escrow contract: if condition 1 and 2 are met
     function createEscrowGNO(uint sellAmountGNO)  // msg.sender == seller
-        public
+        external
         payable
         sufficientPoolFundsETH
     {
@@ -237,8 +242,8 @@ contract PoolETH {
     // DANGER: very expensive due to looping over array
     // Should be called on fixed schedule (maybe once a day)
     function interestPayout() 
-        public
-        managerOnly  // we could also remove restriction: but who pays for gas?? freerider problem
+        external
+        // TBD: managerOnly: we could also add this restriction. But centralised.
     {
         // 10. DEMO: Pool disburses interestPayout share among liquidity providers.
         // TO DO: ratio between share in interest among providers and the reserveFundsETH?
@@ -247,7 +252,7 @@ contract PoolETH {
         uint length = providersETH.length;
         
         for (uint i = 0; i < length; i++) {
-            Provider memory provider = providersETH[i];
+            Provider storage provider = providersETH[i];  // TBD memory?: probably more expensive
             
             // TBD: providerShare float problem
             // Non-DEMO:
@@ -270,22 +275,21 @@ contract PoolETH {
         // no because contract reversts execution state completely?  Maybe no danger after all??
         accruedInterestETH -= payableToProviders - payableToReserve;
     }
-    
 
     // 11 Funds withdrawal
-    function withdrawFromPool()
+    function withdrawFromPool(uint withdrawalAmount)
         external
+        providersOnly
     {
-        require(mappingProvidersETH[msg.sender] > 0);
         uint stakeReceivable = mappingProvidersETH[msg.sender];
         
-        msg.sender.transfer(stakeReceivable);
+        require(withdrawalAmount <= stakeReceivable);
+        
+        msg.sender.transfer(withdrawalAmount);
         
         mappingProvidersETH[msg.sender] = 0;
-        poolFundsETH -= stakeReceivable;
+        poolFundsETH -= withdrawalAmount;
     }
-    
-    
 }
 
 contract EscrowGNO {
