@@ -206,18 +206,18 @@ contract PoolETH {
     }
 }
 
-// Contract EscrowGNO
+// DEMO Contract EscrowGNO
 contract EscrowGNO {
     PoolETH poolETH;
 
     address public beneficiary;
 
-    constructor(address _beneficiary)
+    constructor(address addressPoolETH)
         public
         payable  
     {
-        poolETH = PoolETH(msg.sender);  
-        beneficiary = _beneficiary;
+        poolETH = PoolETH(addressPoolETH);  
+        beneficiary = msg.sender;
     }
 
     function settle(uint newAskGNO)
@@ -229,3 +229,31 @@ contract EscrowGNO {
                 // .gas(800)(); 
     }
 }
+
+
+
+// Real Contract EscrowGNO
+// DEMO Contract EscrowGNO
+//contract EscrowGNO {
+    //PoolETH poolETH;
+
+    //address public beneficiary;
+
+    //constructor(address _beneficiary)
+        //public
+        //payable  
+    //{
+        //poolETH = PoolETH(msg.sender);  
+        //beneficiary = _beneficiary;
+    //}
+
+    //function settle(uint newAskGNO)
+        //external
+       // payable
+    //{
+       // poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, msg.value, beneficiary);
+                // .value(newAskGNO * msg.value)
+                // .gas(800)(); 
+   // }
+//}
+
