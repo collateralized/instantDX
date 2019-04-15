@@ -187,6 +187,8 @@ contract PoolETH {
         accruedInterestETH += DEMO_interestETH; 
         
         deregisterEscrow(msg.sender);
+        
+        poolFundsETH -= DEMO_payable2ToUserETH + DEMO_interestETH;
 
         beneficiary.transfer(DEMO_payable2ToUserETH);  
     }
