@@ -114,13 +114,16 @@ contract PoolETH {
         _;
     }
     
+    
+    uint public payable1ToUserETH;
+    uint public DEMO_payable1ToUserETH;
+
     function createEscrowGNO()  
         external
         payable
         sufficientPoolFundsETH
     {
-        uint bidGNOinWei = msg.value;
-        address newEscrowGNO = (new EscrowGNO).value(bidGNOinWei)(address(this), msg.sender);
+        address newEscrowGNO = (new EscrowGNO).value(msg.value)(address(this), msg.sender);
         
         if (aliveEscrowsToggler == true) {  
             aliveEscrows[1] = newEscrowGNO;
@@ -133,13 +136,14 @@ contract PoolETH {
 
         mappingAliveEscrows[newEscrowGNO] = true;
 
-        payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
-        DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+        payable1ToUserETH  = lastAskGNO * (msg.value / (10**18)) * lvrETHGNO;  
+        DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;
+
+        poolFundsETH -= DEMO_payable1ToUserETH;
+
         // msg.sender.transfer(DEMO_payable1ToUserETH);
     }
-    
-    uint public payable1ToUserETH;
-    uint public DEMO_payable1ToUserETH;
+
 
     function getAliveEscrows()
         public 
@@ -236,7 +240,8 @@ contract PoolETH {
     }
 }
 
-// DEMO: REMIX EDITION Contract EscrowGNO
+// DEMO: Important note to get escrow with Remix At Address field, two instances
+//  must be deployed first - weird Remix bug. 
 contract EscrowGNO {
     PoolETH poolETH;
 
