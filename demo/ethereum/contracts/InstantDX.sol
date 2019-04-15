@@ -106,8 +106,8 @@ contract PoolETH {
     
     function createEscrowGNO()  
         external
-        payable
         sufficientPoolFundsETH
+        payable
     {
         address newEscrowGNO = new EscrowGNO(msg.sender);
         
@@ -135,7 +135,9 @@ contract PoolETH {
     }
 
     modifier escrowOnly() {
-        require(mappingAliveEscrows[msg.sender]);  
+        require(mappingAliveEscrows[msg.sender],
+                "Denied: only callable from EscrowGNO address"
+        );  
         _;
     }
     
@@ -143,8 +145,8 @@ contract PoolETH {
         uint newAskGNO, uint bidGNO, address beneficiary
     )
         external
+        // escrowOnly
         payable
-        escrowOnly
     {
         
         poolFundsETH += msg.value;  
@@ -197,63 +199,56 @@ contract PoolETH {
         
         msg.sender.transfer(withdrawalAmount);
         
-        if (withdrawalAmount == mappingProvidersETH[msg.sender]) {
-            mappingProvidersBOOL[msg.sender] = false;
-        }
+        // Alternative but not good because duplication in providersETH array
+        // if (withdrawalAmount == mappingProvidersETH[msg.sender]) {
+            //mappingProvidersBOOL[msg.sender] = false;
+        //}
+        
+        // Problem: looping in interestPayout will also loop over ex-providers
+        // TO DO: find way to remove mappingProvidersETH[provider] == 0 entries from providersETH array
         
         mappingProvidersETH[msg.sender] -= withdrawalAmount;
         poolFundsETH -= withdrawalAmount;
     }
 }
 
-// DEMO Contract EscrowGNO
+// Contract EscrowGNO
 contract EscrowGNO {
     PoolETH poolETH;
 
     address public beneficiary;
+    address public parentContract;
+    uint public sellAmountGNO;
 
-    constructor(address addressPoolETH)
+
+    constructor(address _beneficiary)
         public
         payable  
     {
-        poolETH = PoolETH(addressPoolETH);  
-        beneficiary = msg.sender;
+        poolETH = PoolETH(msg.sender);
+        parentContract = msg.sender;
+        beneficiary = _beneficiary;
+        sellAmountGNO = msg.value;
+    }
+
+    modifier orderFilled(bool condition) {
+        require(condition);
+        _;
     }
 
     function settle(uint newAskGNO)
         external
+        orderFilled(msg.value == (sellAmountGNO * newAskGNO))
         payable
     {
-        poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, msg.value, beneficiary);
+        poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, sellAmountGNO, beneficiary);
                 // .value(newAskGNO * msg.value)
-                // .gas(800)(); 
+                // .gas(800)();
+
+        sellAmountGNO = 0;
     }
 }
 
 
 
-// Real Contract EscrowGNO
-// DEMO Contract EscrowGNO
-//contract EscrowGNO {
-    //PoolETH poolETH;
-
-    //address public beneficiary;
-
-    //constructor(address _beneficiary)
-        //public
-        //payable  
-    //{
-        //poolETH = PoolETH(msg.sender);  
-        //beneficiary = _beneficiary;
-    //}
-
-    //function settle(uint newAskGNO)
-        //external
-       // payable
-    //{
-       // poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, msg.value, beneficiary);
-                // .value(newAskGNO * msg.value)
-                // .gas(800)(); 
-   // }
-//}
 
