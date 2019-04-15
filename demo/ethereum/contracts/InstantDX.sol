@@ -32,7 +32,7 @@ contract PoolETH {
     bool internal aliveEscrowsToggler = false;  
     
     constructor(uint _minimumContribution, uint _lastAskGNO)  
-        public
+        public  // modifier manager whitelist needed
         payable  
     {
         manager = msg.sender;
