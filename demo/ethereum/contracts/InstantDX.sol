@@ -1,6 +1,6 @@
 pragma solidity ^0.4.25;
 
-// lastAskGNO: 96529870000000000 wei
+// lastAskGNO: 99907700000000000 wei
 
 
 // Contract PoolETH
@@ -11,11 +11,6 @@ contract PoolETH {
     address[] public providersETH;
     mapping(address => uint) public mappingProvidersETH;
     mapping(address => bool) public mappingProvidersBOOL;
-     
-    modifier providersOnly() {
-        require(mappingProvidersBOOL[msg.sender] == true);
-        _;
-    }
     
     uint public minimumContributionETH;  
     uint public poolFundsETH;
@@ -31,7 +26,8 @@ contract PoolETH {
     address[2] public aliveEscrows;
     mapping(address => bool) public mappingAliveEscrows;
     bool internal aliveEscrowsToggler = false;  
-    
+
+   
     constructor(uint _minimumContribution, uint _lastAskGNO)  
         public
         payable  
@@ -47,6 +43,7 @@ contract PoolETH {
         mappingProvidersETH[msg.sender] = msg.value;
         mappingProvidersBOOL[msg.sender] = true;
     }
+
     
     // Fallback function: https://www.bitdegree.org/learn/solidity-fallback-functions
     function ()
@@ -56,6 +53,7 @@ contract PoolETH {
         poolFundsETH += msg.value;
         
     }
+ 
     
     modifier managerOnly() {
         require(msg.sender == manager,
@@ -77,6 +75,7 @@ contract PoolETH {
     {
         InterestRateETH = _interestRateETH;
     }
+
 
     function contribute()
         external
@@ -107,13 +106,14 @@ contract PoolETH {
         return providersETH;
     }
 
+    
     modifier sufficientPoolFundsETH() {
-        require(msg.value < poolFundsETH,
+        require(msg.value <= poolFundsETH,
                 "Denied: InstantDXPool insufficient funds"
         ); 
         _;
     }
-    
+
     function createEscrowGNO()  
         external
         payable
@@ -133,9 +133,12 @@ contract PoolETH {
 
         mappingAliveEscrows[newEscrowGNO] = true;
 
-        payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
-        DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
-        // msg.sender.transfer(DEMO_payable1ToUserETH);
+        payable1ToUserETH  = bidGNOinWei - (lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO); 
+        DEMO_payable1ToUserETH = payable1ToUserETH;
+
+        poolFundsETH -= DEMO_payable1ToUserETH;
+
+        msg.sender.transfer(DEMO_payable1ToUserETH);
     }
     
     uint public payable1ToUserETH;
@@ -161,34 +164,38 @@ contract PoolETH {
         );  
         _;
     }
+
     
     function completedAuctionUpdate_transferPayable2(
         uint newAskGNO, uint bidGNOinWei, uint _auctionReceivableETH, address beneficiary
     )
         external
-        // payable
         escrowOnly
     {
         lastAskGNO = newAskGNO; 
         
-        uint _payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
+        uint _payable1ToUserETH  = bidGNOinWei - (lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO);  
     
-        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 1 ether;  
+        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 500;  
 
         uint auctionReceivableETH = _auctionReceivableETH; 
         
-        uint DEMO_interestETH = 5 finney;  
+        uint DEMO_interestETH = 50 finney;  
         
         DEMO_payable2ToUserETH = auctionReceivableETH - _DEMO_payable1ToUserETH - DEMO_interestETH;  
         
         accruedInterestETH += DEMO_interestETH; 
         
         deregisterEscrow(msg.sender);
+        
+        poolFundsETH -= DEMO_payable2ToUserETH + DEMO_interestETH;
 
         beneficiary.transfer(DEMO_payable2ToUserETH);  
     }
     
     uint public DEMO_payable2ToUserETH;
+
+
 
     function interestPayout() 
         external
@@ -200,15 +207,23 @@ contract PoolETH {
         for (uint i = 0; i < length; i++) {
             address provider = providersETH[i];  
             
-            uint providerPayout = poolFundsETH / length;  
+            providerPayout = payableToProviders / length;  
             
             provider.transfer(providerPayout);
         }
         
-        uint payableToReserve = payableToProviders;  
+        payableToReserve = payableToProviders;  
         reserveFundsETH += payableToReserve;
 
         accruedInterestETH -= payableToProviders + payableToReserve;
+    }
+    uint public providerPayout;
+    uint public payableToReserve;
+
+
+    modifier providersOnly() {
+        require(mappingProvidersBOOL[msg.sender] == true);
+        _;
     }
     
     function withdrawFromPool(uint withdrawalAmount)
@@ -236,15 +251,16 @@ contract PoolETH {
     }
 }
 
-// DEMO: REMIX EDITION Contract EscrowGNO
+
+// DEMO: no interface with DutchX and DutchX oracle
+
 contract EscrowGNO {
+    // Type PoolETH contract (solidity contracts are like classes)
     PoolETH poolETH;
 
     address public beneficiary;
     address public addressPoolETH;
     uint public bidGNOinWei;
-    
-    bool public settled = false;
 
     constructor(address _addressPoolETH, address _beneficiary)
         public
@@ -258,26 +274,6 @@ contract EscrowGNO {
         beneficiary = _beneficiary;
         bidGNOinWei = msg.value;
     }
-    
-    modifier receivablesTransfer(bool condition) {
-        require(condition, "must settle all auctionReceivableETH");
-        _;
-    }
-
-    function settle(uint auctionReceivableETH, uint newAskGNO)
-        external
-        payable
-        receivablesTransfer(msg.value == auctionReceivableETH)
-    {
-        addressPoolETH.call.value(msg.value).gas(3000)();
-        settled = true;
-        sendUpdatesAndKill(newAskGNO, auctionReceivableETH);
-    }
-    
-    modifier onlyIfSettled(bool condition) {
-        require(condition, "escrow not settled yet");
-        _;
-    }
 
     function kill()
         private
@@ -285,16 +281,23 @@ contract EscrowGNO {
         selfdestruct(address(this));
     }
 
-    function sendUpdatesAndKill(uint newAskGNO, uint auctionReceivableETH)
-        private
-        onlyIfSettled(settled == true)
+    modifier receivablesTransfer(bool condition) {
+        require(condition, "must settle all auctionReceivableETH");
+        _;
+    }
+
+    function settleAndKill(uint auctionReceivableETH, uint newAskGNO)
+        external
+        payable
+        receivablesTransfer(msg.value == auctionReceivableETH)
     {
+        addressPoolETH.call.value(msg.value).gas(3000)();
         poolETH.completedAuctionUpdate_transferPayable2(
             newAskGNO, bidGNOinWei, auctionReceivableETH, beneficiary
         );
         
         kill();
-    } 
+    }
 }
 
 
