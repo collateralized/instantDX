@@ -257,7 +257,7 @@ contract EscrowGNO {
         payable
         receivablesTransfer(msg.value == auctionReceivableETH)
     {
-        addressPoolETH.call.value(msg.value).gas(2);
+        addressPoolETH.call.value(msg.value).gas(3000)();
         
         // TO DO: Kill Escrow
     }
