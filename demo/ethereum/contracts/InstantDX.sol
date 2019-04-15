@@ -1,6 +1,6 @@
 pragma solidity ^0.4.25;
 
-// lastAskGNO: 96529870000000000 wei
+// lastAskGNO: 99907700000000000 wei
 
 
 // Contract PoolETH
@@ -137,7 +137,7 @@ contract PoolETH {
         mappingAliveEscrows[newEscrowGNO] = true;
 
         payable1ToUserETH  = lastAskGNO * (msg.value / (10**18)) * lvrETHGNO;  
-        DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;
+        DEMO_payable1ToUserETH = payable1ToUserETH;
 
         poolFundsETH -= DEMO_payable1ToUserETH;
 
@@ -177,11 +177,11 @@ contract PoolETH {
         
         uint _payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
     
-        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 1 ether;  
+        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 500;  
 
         uint auctionReceivableETH = _auctionReceivableETH; 
         
-        uint DEMO_interestETH = 5 finney;  
+        uint DEMO_interestETH = 50 finney;  
         
         DEMO_payable2ToUserETH = auctionReceivableETH - _DEMO_payable1ToUserETH - DEMO_interestETH;  
         
