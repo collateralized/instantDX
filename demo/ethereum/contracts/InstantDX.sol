@@ -123,7 +123,8 @@ contract PoolETH {
         payable
         sufficientPoolFundsETH
     {
-        address newEscrowGNO = (new EscrowGNO).value(msg.value)(address(this), msg.sender);
+        uint bidGNOinWei = msg.value;
+        address newEscrowGNO = (new EscrowGNO).value(bidGNOinWei)(address(this), msg.sender);
         
         if (aliveEscrowsToggler == true) {  
             aliveEscrows[1] = newEscrowGNO;
@@ -136,12 +137,12 @@ contract PoolETH {
 
         mappingAliveEscrows[newEscrowGNO] = true;
 
-        payable1ToUserETH  = lastAskGNO * (msg.value / (10**18)) * lvrETHGNO;  
+        payable1ToUserETH  = bidGNOinWei - (lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO); 
         DEMO_payable1ToUserETH = payable1ToUserETH;
 
         poolFundsETH -= DEMO_payable1ToUserETH;
 
-        // msg.sender.transfer(DEMO_payable1ToUserETH);
+        msg.sender.transfer(DEMO_payable1ToUserETH);
     }
 
 
@@ -170,12 +171,11 @@ contract PoolETH {
         uint newAskGNO, uint bidGNOinWei, uint _auctionReceivableETH, address beneficiary
     )
         external
-        // payable
         escrowOnly
     {
         lastAskGNO = newAskGNO; 
         
-        uint _payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
+        uint _payable1ToUserETH  = bidGNOinWei - (lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO);  
     
         uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 500;  
 
@@ -204,16 +204,19 @@ contract PoolETH {
         for (uint i = 0; i < length; i++) {
             address provider = providersETH[i];  
             
-            uint providerPayout = poolFundsETH / length;  
+            providerPayout = 1000000000000000000;  
             
             provider.transfer(providerPayout);
         }
         
-        uint payableToReserve = payableToProviders;  
+        payableToReserve = payableToProviders;  
         reserveFundsETH += payableToReserve;
 
         accruedInterestETH -= payableToProviders + payableToReserve;
     }
+    uint public providerPayout;
+    uint public payableToReserve;
+    
     
     function withdrawFromPool(uint withdrawalAmount)
         external
