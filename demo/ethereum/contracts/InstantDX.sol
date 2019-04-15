@@ -2,10 +2,18 @@ pragma solidity ^0.4.25;
 
 // lastAskGNO: 96529870000000000 wei
 
+
 // Contract PoolETH
 contract PoolETH {
     
     address public manager;
+    
+    
+    function balance() 
+        external view returns (uint256)
+    {
+        return this.balance;
+    }
 
     address[] public providersETH;
     mapping(address => uint) public mappingProvidersETH;
@@ -32,7 +40,7 @@ contract PoolETH {
     bool internal aliveEscrowsToggler = false;  
     
     constructor(uint _minimumContribution, uint _lastAskGNO)  
-        public  // modifier manager whitelist needed
+        public
         payable  
     {
         manager = msg.sender;
@@ -46,6 +54,12 @@ contract PoolETH {
         mappingProvidersETH[msg.sender] = msg.value;
         mappingProvidersBOOL[msg.sender] = true;
     }
+    
+    // Fallback function: https://www.bitdegree.org/learn/solidity-fallback-functions
+    function () payable {
+        poolFundsETH += msg.value;
+    }
+    
     
     modifier managerOnly() {
         require(msg.sender == manager,
@@ -106,8 +120,8 @@ contract PoolETH {
     
     function createEscrowGNO()  
         external
-        sufficientPoolFundsETH
         payable
+        sufficientPoolFundsETH
     {
         address newEscrowGNO = new EscrowGNO(msg.sender);
         
@@ -142,14 +156,13 @@ contract PoolETH {
     }
     
     function completedAuctionUpdate_transferPayable2(
-        uint newAskGNO, uint bidGNO, address beneficiary
+        uint receivableETH, uint newAskGNO, uint bidGNO, address beneficiary
     )
         external
         // escrowOnly
-        payable
     {
         
-        poolFundsETH += msg.value;  
+        poolFundsETH += receivableETH;  
     
         uint payable1ToUserETH  = lastAskGNO * bidGNO * lvrETHGNO;  
     
@@ -167,7 +180,8 @@ contract PoolETH {
 
         beneficiary.transfer(DEMO_payable2ToUserETH);  
     }
-    
+
+
     function interestPayout() 
         external
     {
@@ -212,43 +226,76 @@ contract PoolETH {
     }
 }
 
-// Contract EscrowGNO
+// DEMO: REMIX EDITION Contract EscrowGNO
 contract EscrowGNO {
     PoolETH poolETH;
 
     address public beneficiary;
-    address public parentContract;
+    address public addressPoolETH;
     uint public sellAmountGNO;
+    // uint public lastAskGNO;
+    // uint public lvrETHGNO;
 
-
-    constructor(address _beneficiary)
+    constructor(address _addressPoolETH)
         public
         payable  
     {
-        poolETH = PoolETH(msg.sender);
-        parentContract = msg.sender;
-        beneficiary = _beneficiary;
+        poolETH = PoolETH(_addressPoolETH);
+        require(poolETH.poolFundsETH() >= msg.value,
+                "Denied: Insufficient funds in pool"
+        );
+        addressPoolETH = _addressPoolETH;
+        beneficiary = msg.sender;
         sellAmountGNO = msg.value;
+        // lastAskGNO = poolETH.lastAskGNO();
+        // lvrETHGNO = poolETH.lvrETHGNO();  
+        
+        // uint payable1ToUserETH =  lastAskGNO * sellAmountGNO * lvrETHGNO; 
+        // uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+        // beneficiary.transfer(DEMO_payable1ToUserETH);
     }
 
-    modifier orderFilled(bool condition) {
-        require(condition);
+    modifier receivablesTransfer(bool condition) {
+        require(condition, "transfer auctionReceivableETH");
         _;
     }
 
-    function settle(uint newAskGNO)
+    function settle(uint auctionReceivableETH)
         external
-        orderFilled(msg.value == (sellAmountGNO * newAskGNO))
         payable
+        receivablesTransfer(msg.value == auctionReceivableETH)
     {
-        poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, sellAmountGNO, beneficiary);
-                // .value(newAskGNO * msg.value)
-                // .gas(800)();
-
-        sellAmountGNO = 0;
+        addressPoolETH.call.value(msg.value).gas(2);
+        
+        // TO DO: Kill Escrow
     }
+    
 }
 
 
 
+// Real Contract EscrowGNO
+// DEMO Contract EscrowGNO
+//contract EscrowGNO {
+    //PoolETH poolETH;
+
+    //address public beneficiary;
+
+    //constructor(address _beneficiary)
+        //public
+        //payable  
+    //{
+        //poolETH = PoolETH(msg.sender);  
+        //beneficiary = _beneficiary;
+    //}
+
+    //function settle(uint newAskGNO)
+        //external
+       // payable
+    //{
+       // poolETH.completedAuctionUpdate_transferPayable2(newAskGNO, msg.value, beneficiary);
+                // .value(newAskGNO * msg.value)
+                // .gas(800)(); 
+   // }
+//}
 
