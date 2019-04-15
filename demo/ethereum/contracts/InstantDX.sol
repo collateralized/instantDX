@@ -49,8 +49,12 @@ contract PoolETH {
     }
     
     // Fallback function: https://www.bitdegree.org/learn/solidity-fallback-functions
-    function () payable {
+    function ()
+        public  // escrowOnly??
+        payable 
+    {
         poolFundsETH += msg.value;
+        
     }
     
     modifier managerOnly() {
@@ -129,7 +133,6 @@ contract PoolETH {
         uint payable1ToUserETH  = lastAskGNO * msg.value * lvrETHGNO;  
         uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
         msg.sender.transfer(DEMO_payable1ToUserETH);
-
     }
 
     function getAliveEscrows()
@@ -148,29 +151,26 @@ contract PoolETH {
     }
     
     function completedAuctionUpdate_transferPayable2(
-        uint receivableETH, uint newAskGNO, uint bidGNO, address beneficiary
+        uint newAskGNO // , uint bidGNO //, address beneficiary
     )
         external
         // escrowOnly
     {
-        
-        poolFundsETH += receivableETH;  
+        //uint payable1ToUserETH  = lastAskGNO * bidGNO * lvrETHGNO;  
     
-        uint payable1ToUserETH  = lastAskGNO * bidGNO * lvrETHGNO;  
-    
-        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+        // uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
 
-        uint auctionReceivableETH = newAskGNO * bidGNO; 
+        // uint auctionReceivableETH = newAskGNO * bidGNO; 
         
         uint DEMO_interestETH = 5 finney;  
         
-        uint DEMO_payable2ToUserETH = auctionReceivableETH - DEMO_payable1ToUserETH - DEMO_interestETH;  
+        // uint DEMO_payable2ToUserETH = auctionReceivableETH - DEMO_payable1ToUserETH - DEMO_interestETH;  
         
         lastAskGNO = newAskGNO; 
         
         accruedInterestETH += DEMO_interestETH;  
 
-        beneficiary.transfer(DEMO_payable2ToUserETH);  
+        // beneficiary.transfer(DEMO_payable2ToUserETH);  
     }
 
 
@@ -199,11 +199,16 @@ contract PoolETH {
         external
         providersOnly
     {
-        uint stakeReceivable = mappingProvidersETH[msg.sender];
+        // Checks-Effects-Interactions pattern: re-entrancy protection
+        uint stakeReceivable = mappingProvidersETH[msg.sender];  // Check1
         
-        require(withdrawalAmount <= stakeReceivable);
+        require(withdrawalAmount <= stakeReceivable);  // Check2
         
-        msg.sender.transfer(withdrawalAmount);
+        mappingProvidersETH[msg.sender] -= withdrawalAmount;  // Effect1
+        
+        poolFundsETH -= withdrawalAmount;  // Effect2
+        
+        msg.sender.transfer(withdrawalAmount);  // Interaction
         
         // Alternative but not good because duplication in providersETH array
         // if (withdrawalAmount == mappingProvidersETH[msg.sender]) {
@@ -212,9 +217,6 @@ contract PoolETH {
         
         // Problem: looping in interestPayout will also loop over ex-providers
         // TO DO: find way to remove mappingProvidersETH[provider] == 0 entries from providersETH array
-        
-        mappingProvidersETH[msg.sender] -= withdrawalAmount;
-        poolFundsETH -= withdrawalAmount;
     }
 }
 
@@ -225,6 +227,9 @@ contract EscrowGNO {
     address public beneficiary;
     address public addressPoolETH;
     uint public sellAmountGNO;
+    
+    bool public settled = false;
+    
     // uint public lastAskGNO;
     // uint public lvrETHGNO;
 
@@ -248,7 +253,7 @@ contract EscrowGNO {
     }
 
     modifier receivablesTransfer(bool condition) {
-        require(condition, "transfer auctionReceivableETH");
+        require(condition, "must settle all auctionReceivableETH");
         _;
     }
 
@@ -258,10 +263,20 @@ contract EscrowGNO {
         receivablesTransfer(msg.value == auctionReceivableETH)
     {
         addressPoolETH.call.value(msg.value).gas(3000)();
-        
-        // TO DO: Kill Escrow
+        settled = true;
     }
     
+    modifier ifSettled(bool condition) {
+        require(condition, "escrow not settled yet");
+        _;
+    }
+    
+    function sendUpdates(uint newAskGNO)
+        public
+        ifSettled(settled == true)
+    {
+        poolETH.completedAuctionUpdate_transferPayable2(newAskGNO);  //, sellAmountGNO) , beneficiary);
+    }    
 }
 
 
