@@ -119,21 +119,27 @@ contract PoolETH {
         payable
         sufficientPoolFundsETH
     {
-        address newEscrowGNO = new EscrowGNO(msg.sender);
+        uint bidGNOinWei = msg.value;
+        address newEscrowGNO = (new EscrowGNO).value(bidGNOinWei)(address(this), msg.sender);
         
-        if (aliveEscrowsToggler) {  
+        if (aliveEscrowsToggler == true) {  
             aliveEscrows[1] = newEscrowGNO;
             aliveEscrowsToggler = false;  
         }
-        
-        aliveEscrows[0] = newEscrowGNO;
-        mappingAliveEscrows[newEscrowGNO] = true;
-        aliveEscrowsToggler = true;  
+        else {
+            aliveEscrows[0] = newEscrowGNO;
+            aliveEscrowsToggler = true; 
+        }
 
-        uint payable1ToUserETH  = lastAskGNO * msg.value * lvrETHGNO;  
-        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
-        msg.sender.transfer(DEMO_payable1ToUserETH);
+        mappingAliveEscrows[newEscrowGNO] = true;
+
+        payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
+        DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+        // msg.sender.transfer(DEMO_payable1ToUserETH);
     }
+    
+    uint public payable1ToUserETH;
+    uint public DEMO_payable1ToUserETH;
 
     function getAliveEscrows()
         public 
@@ -141,6 +147,12 @@ contract PoolETH {
         returns (address[2])
     {
         return aliveEscrows;
+    }
+    
+    function deregisterEscrow(address aliveEscrow)
+        private
+    {
+        mappingAliveEscrows[aliveEscrow] = false;
     }
 
     modifier escrowOnly() {
@@ -151,27 +163,29 @@ contract PoolETH {
     }
     
     function completedAuctionUpdate_transferPayable2(
-        uint newAskGNO, uint bidGNO, uint _auctionReceivableETH //, address beneficiary
+        uint newAskGNO, uint bidGNOinWei, uint _auctionReceivableETH, address beneficiary
     )
         external
         // payable
-        // escrowOnly
+        escrowOnly
     {
         lastAskGNO = newAskGNO; 
         
-        uint payable1ToUserETH  = lastAskGNO * (bidGNO / (10**18)) * lvrETHGNO;  
+        uint _payable1ToUserETH  = lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO;  
     
-        uint DEMO_payable1ToUserETH = payable1ToUserETH - 1 ether;  
+        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 1 ether;  
 
         uint auctionReceivableETH = _auctionReceivableETH; 
         
         uint DEMO_interestETH = 5 finney;  
         
-        DEMO_payable2ToUserETH = auctionReceivableETH - DEMO_payable1ToUserETH - DEMO_interestETH;  
+        DEMO_payable2ToUserETH = auctionReceivableETH - _DEMO_payable1ToUserETH - DEMO_interestETH;  
         
-        accruedInterestETH += DEMO_interestETH;  
+        accruedInterestETH += DEMO_interestETH; 
+        
+        deregisterEscrow(msg.sender);
 
-        // beneficiary.transfer(DEMO_payable2ToUserETH);  
+        beneficiary.transfer(DEMO_payable2ToUserETH);  
     }
     
     uint public DEMO_payable2ToUserETH;
@@ -228,11 +242,11 @@ contract EscrowGNO {
 
     address public beneficiary;
     address public addressPoolETH;
-    uint public sellAmountGNO;
+    uint public bidGNOinWei;
     
     bool public settled = false;
 
-    constructor(address _addressPoolETH)
+    constructor(address _addressPoolETH, address _beneficiary)
         public
         payable  
     {
@@ -241,8 +255,8 @@ contract EscrowGNO {
                 "Denied: Insufficient funds in pool"
         );
         addressPoolETH = _addressPoolETH;
-        beneficiary = msg.sender;
-        sellAmountGNO = msg.value;
+        beneficiary = _beneficiary;
+        bidGNOinWei = msg.value;
     }
     
     modifier receivablesTransfer(bool condition) {
@@ -257,33 +271,31 @@ contract EscrowGNO {
     {
         addressPoolETH.call.value(msg.value).gas(3000)();
         settled = true;
-        sendUpdates(newAskGNO, auctionReceivableETH);
+        sendUpdatesAndKill(newAskGNO, auctionReceivableETH);
     }
     
-    modifier onlyIfSettled(condition) {
+    modifier onlyIfSettled(bool condition) {
         require(condition, "escrow not settled yet");
         _;
     }
 
-    function sendUpdates(uint newAskGNO, uint auctionReceivableETH)
-        internal
-        onlyIfSettled(settled == true)
-    {
-        poolETH.completedAuctionUpdate_transferPayable2(
-            newAskGNO, sellAmountGNO, auctionReceivableETH
-        );  //, sellAmountGNO) , beneficiary);
-    } 
-    
-    modifier onlyPoolETH() {
-        require(msg.sender == addressPoolETH);
-        _;
-    }
-    
     function kill()
-        external
-        onlyPoolETH
+        private
     {
         selfdestruct(address(this));
     }
+
+    function sendUpdatesAndKill(uint newAskGNO, uint auctionReceivableETH)
+        private
+        onlyIfSettled(settled == true)
+    {
+        poolETH.completedAuctionUpdate_transferPayable2(
+            newAskGNO, bidGNOinWei, auctionReceivableETH, beneficiary
+        );
+        
+        kill();
+    } 
 }
+
+
 
