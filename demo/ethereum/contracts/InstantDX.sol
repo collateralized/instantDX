@@ -7,13 +7,6 @@ pragma solidity ^0.4.25;
 contract PoolETH {
     
     address public manager;
-    
-    
-    function balance() 
-        external view returns (uint256)
-    {
-        return this.balance;
-    }
 
     address[] public providersETH;
     mapping(address => uint) public mappingProvidersETH;
@@ -59,7 +52,6 @@ contract PoolETH {
     function () payable {
         poolFundsETH += msg.value;
     }
-    
     
     modifier managerOnly() {
         require(msg.sender == manager,
