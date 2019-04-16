@@ -267,7 +267,7 @@ contract Escrow {
         payable  
     {
         pool = Pool(_addressPool);
-        require(Pool.poolFunds() >= msg.value,
+        require(pool.poolFunds() >= msg.value,
                 "Denied: Insufficient funds in pool"
         );
         addressPool = _addressPool;
