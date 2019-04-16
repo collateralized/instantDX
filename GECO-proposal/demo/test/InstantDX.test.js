@@ -61,7 +61,7 @@ describe("InstantDX", () => {
 
     // Test if contribution in pool
     const poolFunds = await poolETH.methods.poolFundsETH().call();
-    assert.equal(poolFunds, "2000000000000000000");  // seed + contribution
+    assert.equal(poolFunds, parseInt(SEED_FUNDING) + parseInt(CONTRIBUTION));
 
     // Test for provider mark
     const isProvider = await poolETH.methods
