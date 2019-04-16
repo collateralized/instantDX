@@ -1,0 +1,40 @@
+{
+  "Creation": {
+    "codeDepositCost": "1469400",
+    "executionCost": "223258",
+    "totalCost": "1692658"
+  },
+  "External": {
+    "": "20889",
+    "DEMO_payable1ToUserETH()": "724",
+    "DEMO_payable2ToUserETH()": "878",
+    "InterestRateETH()": "944",
+    "accruedInterestETH()": "526",
+    "adjustInterestRateETH(uint256)": "20569",
+    "adjustLVRETHGNO(uint256)": "21053",
+    "aliveEscrows(uint256)": "601",
+    "completedAuctionUpdate_transferPayable2(uint256,uint256,uint256,address)": "infinite",
+    "contribute()": "102386",
+    "createEscrowGNO()": "infinite",
+    "getAliveEscrows()": "infinite",
+    "getProvidersETH()": "infinite",
+    "interestPayout()": "infinite",
+    "lastAskGNO()": "746",
+    "lvrETHGNO()": "570",
+    "manager()": "662",
+    "mappingAliveEscrows(address)": "1009",
+    "mappingProvidersBOOL(address)": "569",
+    "mappingProvidersETH(address)": "576",
+    "minimumContributionETH()": "658",
+    "payable1ToUserETH()": "592",
+    "payableToReserve()": "922",
+    "poolFundsETH()": "504",
+    "providerPayout()": "812",
+    "providersETH(uint256)": "1072",
+    "reserveFundsETH()": "702",
+    "withdrawFromPool(uint256)": "infinite"
+  },
+  "Internal": {
+    "deregisterEscrow(address)": "20374"
+  }
+}
