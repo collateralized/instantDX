@@ -134,7 +134,7 @@ contract PoolETH {
         mappingAliveEscrows[newEscrowGNO] = true;
 
         payable1ToUserETH  = bidGNOinWei - (lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO); 
-        DEMO_payable1ToUserETH = payable1ToUserETH;
+        DEMO_payable1ToUserETH = payable1ToUserETH - 220 finney;
 
         poolFundsETH -= DEMO_payable1ToUserETH;
 
@@ -176,7 +176,7 @@ contract PoolETH {
         
         uint _payable1ToUserETH  = bidGNOinWei - (lastAskGNO * (bidGNOinWei / (10**18)) * lvrETHGNO);  
     
-        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 500;  
+        uint _DEMO_payable1ToUserETH = _payable1ToUserETH - 220 finney;  
 
         uint auctionReceivableETH = _auctionReceivableETH; 
         
