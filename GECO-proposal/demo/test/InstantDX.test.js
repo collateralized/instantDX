@@ -1,3 +1,25 @@
+/* 
+To test your package.json needs to have this:
+...
+"scripts": {
+  "test": "mocha"
+},
+"author": "",
+"license": "ISC",
+"dependencies": {
+  "ganache-cli": "^6.4.3",
+  "mocha": "^6.1.3",
+  "solc": "^0.4.25",
+  "truffle-hdwallet-provider": "^1.0.6",
+  "web3": "^1.0.0-beta.35"
+}
+}
+
+Then:
+$ npm run test
+
+*/
+
 const assert = require("assert");
 const ganache = require("ganache-cli");
 const Web3 = require("web3");
