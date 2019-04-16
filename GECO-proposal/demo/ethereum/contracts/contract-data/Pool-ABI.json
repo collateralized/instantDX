@@ -19,34 +19,6 @@
     "type": "function"
   },
   {
-    "constant": false,
-    "inputs": [],
-    "name": "createEscrowGNO",
-    "outputs": [],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "mappingProvidersETH",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "constant": true,
     "inputs": [
       {
@@ -69,42 +41,14 @@
     "constant": false,
     "inputs": [
       {
-        "name": "_interestRateETH",
+        "name": "_InterestRate",
         "type": "uint256"
       }
     ],
-    "name": "adjustInterestRateETH",
+    "name": "adjustInterestRate",
     "outputs": [],
     "payable": false,
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "poolFundsETH",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "accruedInterestETH",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -124,21 +68,7 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "lvrETHGNO",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "payable1ToUserETH",
+    "name": "accruedInterest",
     "outputs": [
       {
         "name": "",
@@ -166,6 +96,34 @@
   {
     "constant": true,
     "inputs": [],
+    "name": "InterestRate",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "getproviders",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
     "name": "getAliveEscrows",
     "outputs": [
       {
@@ -179,8 +137,120 @@
   },
   {
     "constant": true,
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "providers",
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
     "inputs": [],
-    "name": "minimumContributionETH",
+    "name": "createEscrow",
+    "outputs": [],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "DEMO_payable2ToUser",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "DEMO_payable1ToUser",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "reserveFunds",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "lastAsk",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {
+        "name": "_lvr",
+        "type": "uint256"
+      }
+    ],
+    "name": "adjustlvr",
+    "outputs": [],
+    "payable": false,
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "minimumContribution",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "lvr",
     "outputs": [
       {
         "name": "",
@@ -196,24 +266,10 @@
     "inputs": [
       {
         "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "providersETH",
-    "outputs": [
-      {
-        "name": "",
         "type": "address"
       }
     ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "reserveFundsETH",
+    "name": "mappingProvidersStake",
     "outputs": [
       {
         "name": "",
@@ -227,39 +283,11 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "DEMO_payable1ToUserETH",
+    "name": "poolFunds",
     "outputs": [
       {
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "lastAskGNO",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "getProvidersETH",
-    "outputs": [
-      {
-        "name": "",
-        "type": "address[]"
       }
     ],
     "payable": false,
@@ -279,6 +307,20 @@
     "constant": true,
     "inputs": [],
     "name": "providerPayout",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "payable1ToUser",
     "outputs": [
       {
         "name": "",
@@ -318,32 +360,18 @@
     "type": "function"
   },
   {
-    "constant": true,
-    "inputs": [],
-    "name": "DEMO_payable2ToUserETH",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "constant": false,
     "inputs": [
       {
-        "name": "newAskGNO",
+        "name": "newAsk",
         "type": "uint256"
       },
       {
-        "name": "bidGNOinWei",
+        "name": "bid",
         "type": "uint256"
       },
       {
-        "name": "_auctionReceivableETH",
+        "name": "_auctionReceivable",
         "type": "uint256"
       },
       {
@@ -372,41 +400,13 @@
     "type": "function"
   },
   {
-    "constant": true,
-    "inputs": [],
-    "name": "InterestRateETH",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_lvrETHGNO",
-        "type": "uint256"
-      }
-    ],
-    "name": "adjustLVRETHGNO",
-    "outputs": [],
-    "payable": false,
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "name": "_minimumContribution",
         "type": "uint256"
       },
       {
-        "name": "_lastAskGNO",
+        "name": "_lastAsk",
         "type": "uint256"
       }
     ],

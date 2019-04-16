@@ -5,9 +5,9 @@
     "totalCost": "infinite"
   },
   "External": {
-    "addressPoolETH()": "486",
-    "beneficiary()": "464",
-    "bidGNOinWei()": "460",
+    "addressPool()": "508",
+    "beneficiary()": "486",
+    "bid()": "416",
     "settleAndKill(uint256,uint256)": "infinite"
   },
   "Internal": {

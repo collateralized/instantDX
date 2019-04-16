@@ -3,11 +3,11 @@
     "constant": false,
     "inputs": [
       {
-        "name": "auctionReceivableETH",
+        "name": "auctionReceivable",
         "type": "uint256"
       },
       {
-        "name": "newAskGNO",
+        "name": "newAsk",
         "type": "uint256"
       }
     ],
@@ -18,28 +18,13 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "name": "_addressPoolETH",
-        "type": "address"
-      },
-      {
-        "name": "_beneficiary",
-        "type": "address"
-      }
-    ],
-    "payable": true,
-    "stateMutability": "payable",
-    "type": "constructor"
-  },
-  {
     "constant": true,
     "inputs": [],
-    "name": "addressPoolETH",
+    "name": "bid",
     "outputs": [
       {
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "payable": false,
@@ -63,15 +48,30 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "bidGNOinWei",
+    "name": "addressPool",
     "outputs": [
       {
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "payable": false,
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "name": "_addressPool",
+        "type": "address"
+      },
+      {
+        "name": "_beneficiary",
+        "type": "address"
+      }
+    ],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "constructor"
   }
 ]
