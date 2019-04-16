@@ -1,0 +1,16 @@
+{
+  "Creation": {
+    "codeDepositCost": "208000",
+    "executionCost": "infinite",
+    "totalCost": "infinite"
+  },
+  "External": {
+    "addressPoolETH()": "486",
+    "beneficiary()": "464",
+    "bidGNOinWei()": "460",
+    "settleAndKill(uint256,uint256)": "infinite"
+  },
+  "Internal": {
+    "kill()": "30009"
+  }
+}
