@@ -4,9 +4,9 @@
 ### Project name: [InstantDX](https://github.com/collateralized/instant-dutchx)
 --------
 ### Team members
-**Hilmar Orth (Hilmar X)** - [Twitter](https://twitter.com/hilmarxo), [Github](https://github.com/hilmarx), [Linkedin](https://www.linkedin.com/in/hilmarx/)
+**Hilmar Orth (Hilmar X)** - [Twitter](https://twitter.com/hilmarxo), [Github](https://github.com/hilmarx)
 
-**Luis Schliesske (Bytezantium)** - [Twitter](https://twitter.com/bytezantium), [Github](https://github.com/bytezantium), [LinkedIn](https://www.linkedin.com/in/schliesskeluis/)
+**Luis Schliesske (Bytezantium)** - [Twitter](https://twitter.com/bytezantium), [Github](https://github.com/bytezantium)
 
 -------
 ### The Project 
