@@ -68,6 +68,35 @@ describe("InstantDX", () => {
     assert(isProvider);
   });
 
+  it("requires a minimum contribution", async () => {
+    try {
+      await poolETH.methods.contribute().send({
+        value: "900000000000000000",  // 0.9 ETH
+        from: accounts[1]
+      });
+      assert(false);
+    } catch (err) {
+      assert(err);
+    }
+  });
+
+  it("allows anyone to create an escrow sell order with a payable amount", async () => {
+    await poolETH.methods.createEscrowGNO("1000000000000000000").send({
+      from: accounts[2],
+      gas: "1000000"
+    });
+  
+    [escrowAddress] = await poolETH.methods.getAliveEscrows().call();
+    escrow = await new web3.eth.Contract(
+      JSON.parse(compiledEscrowGNO.interface),
+      escrowAddress
+    );
+
+    assert.ok(escrow.options.address);
+    assert.equal(escrow.methods.)
+
+  });
+
   
 
 });
