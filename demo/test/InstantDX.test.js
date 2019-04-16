@@ -26,7 +26,7 @@ beforeEach(async () => {
     .send({
         value: SEED_FUNDING,
         from: accounts[0],
-        gas: "1000000"
+        gas: "2000000"
     });
 });
 
@@ -38,18 +38,14 @@ describe("InstantDX", () => {
   it("sets pool manager, minimum contribution, lastAskGNO and seeds pool", async () => {
     const manager = await poolETH.methods.manager().call();
     assert.equal(accounts[0], manager);
-    console.log("manager marked");
 
     const minimum = await poolETH.methods.minimumContributionETH().call();
     assert.equal(MINIMUM_CONTRIBUTION, minimum);
-    console.log("minimum set");
 
     const lastAskGNO = await poolETH.methods.lastAskGNO().call();
     assert.equal(LAST_ASK_GNO, lastAskGNO);
-    console.log("lastAskGNO set");
 
     const seed = await poolETH.methods.poolFundsETH().call();
     assert.equal(SEED_FUNDING, seed);
-    console.log("seeded");
   });
 });
