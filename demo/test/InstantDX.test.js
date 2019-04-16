@@ -48,4 +48,26 @@ describe("InstantDX", () => {
     const seed = await poolETH.methods.poolFundsETH().call();
     assert.equal(SEED_FUNDING, seed);
   });
+
+  it("allows people to contribute to the pool and marks them as providers ", async () => {
+    await poolETH.methods.contribute().send({
+      value: "1000000000000000000",
+      from: accounts[1],
+      gas: "1000000"
+    });
+
+    // Test if contribution in pool
+    const poolFunds = await poolETH.methods.poolFundsETH().call();
+    assert.equal(poolFunds, "2000000000000000000");  // seed + contribution
+
+    // Test for provider mark
+    const isProvider = await poolETH.methods
+      .mappingProvidersBOOL(accounts[1])
+      .call(  
+    );
+    assert(isProvider);
+  });
+
+  
+
 });
