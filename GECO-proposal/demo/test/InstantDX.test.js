@@ -126,12 +126,12 @@ describe("InstantDX", () => {
      and processes instant payout 1`, async () => {
     // Pre Sell Order balance
     let balance1 = await web3.eth.getBalance(accounts[2]);
-    balance1 = web3.utils.fromWei(balance1, "er");
+    balance1 = web3.utils.fromWei(balance1, "ether");
     balance1 = parseFloat(balance1)
     console.log("balance  prior to sell order: " + balance1);
     
     let sellOrderVolume = BID;
-    sellOrderVolume = web3.utils.fromWei(sellOrderVolume, "er");
+    sellOrderVolume = web3.utils.fromWei(sellOrderVolume, "ether");
     console.log("Sell Order Volume: " + sellOrderVolume);
     
     // Deploy escrow
@@ -150,7 +150,7 @@ describe("InstantDX", () => {
     assert.ok(escrow.options.address);
     
     // Check deployed escrows state variable getters
-    const escrowed = await escrow.methods.bidinWei().call();
+    const escrowed = await escrow.methods.bid().call();
     const beneficiary = await escrow.methods.beneficiary().call();
     assert.equal(BID, escrowed);
     assert.equal(accounts[2], beneficiary);
@@ -158,16 +158,16 @@ describe("InstantDX", () => {
     
     // Check if instant payout1 was processed
     let payout1 = await pool.methods.DEMO_payable1ToUser().call();
-    payout1 = web3.utils.fromWei(payout1, "er");
+    payout1 = web3.utils.fromWei(payout1, "ether");
     payout1 = parseFloat(payout1)
     console.log("Instant payout1 in : " + payout1);
     
     let balance2 = await web3.eth.getBalance(accounts[2]);
-    balance2 = web3.utils.fromWei(balance2, "er");
+    balance2 = web3.utils.fromWei(balance2, "ether");
     balance2 = parseFloat(balance2)
     console.log("Balance  after sell order submission and instant payout: " + balance2);
     
-    let gasLimit = web3.utils.fromWei(GAS1, "er");
+    let gasLimit = web3.utils.fromWei(GAS1, "ether");
     gasLimit = parseFloat(gasLimit);
 
     let expectedBalance2 = balance1 - sellOrderVolume - gasLimit + payout1;
