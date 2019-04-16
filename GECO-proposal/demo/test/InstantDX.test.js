@@ -9,7 +9,10 @@ const compiledEscrowGNO = require("../ethereum/build/EscrowGNO.json");
 
 const MINIMUM_CONTRIBUTION = '1000000000000000000';
 const LAST_ASK_GNO = '96529870000000000';  // GNO/ETH coinmarketcap 14 April
-const SEED_FUNDING = '1000000000000000000'
+const SEED_FUNDING = '1000000000000000000';  // 1 ETH
+const CONTRIBUTION = '1000000000000000000';  // 1 ETH
+const BELOW_MINIMUM = "900000000000000000";  // 0.9 ETH
+const BID_GNO = '1000000000000000000';  // 1 ETH
 
 let accounts; // accounts that exist on local Ganache network.
 let poolETH; // reference to deployed instance of pool contract.
@@ -51,7 +54,7 @@ describe("InstantDX", () => {
 
   it("allows people to contribute to the pool and marks them as providers ", async () => {
     await poolETH.methods.contribute().send({
-      value: "1000000000000000000",
+      value: CONTRIBUTION,
       from: accounts[1],
       gas: "1000000"
     });
@@ -70,8 +73,8 @@ describe("InstantDX", () => {
 
   it("requires a minimum contribution", async () => {
     try {
-      await poolETH.methods.contribute().send({
-        value: "900000000000000000",  // 0.9 ETH
+      await pooclETH.methods.contribute().send({
+        value: BELOW_MINIMUM,
         from: accounts[1]
       });
       assert(false);
@@ -80,8 +83,9 @@ describe("InstantDX", () => {
     }
   });
 
-  it("allows anyone to create an escrow sell order with a payable amount", async () => {
-    await poolETH.methods.createEscrowGNO("1000000000000000000").send({
+  it("allows anyone to create an escrow with a payable amount", async () => {
+    await poolETH.methods.createEscrowGNO().send({
+      value: BID_GNO,
       from: accounts[2],
       gas: "1000000"
     });
@@ -91,10 +95,12 @@ describe("InstantDX", () => {
       JSON.parse(compiledEscrowGNO.interface),
       escrowAddress
     );
+    escrowed = await escrow.methods.bidGNOinWei().call();
+    beneficiary = await escrow.methods.beneficiary().call();
 
     assert.ok(escrow.options.address);
-    assert.equal(escrow.methods.)
-
+    assert.equal(BID_GNO, escrowed);
+    assert.equal(accounts[2], beneficiary);
   });
 
   
