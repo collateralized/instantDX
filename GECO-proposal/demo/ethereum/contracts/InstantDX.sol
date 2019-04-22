@@ -131,18 +131,18 @@ contract Pool {
             aliveEscrowsToggler = true; 
         }
 
-        mappingAliveEscrows[newEscrow] = true;
+        // mappingAliveEscrows[newEscrow] = true;
 
-        payable1ToUser  = bid - (lastAsk * (bid / (10**18)) * lvr); 
-        DEMO_payable1ToUser = payable1ToUser - 220 finney;
+        // payable1ToUser  = bid - (lastAsk * (bid / (10**18)) * lvr); 
+        // DEMO_payable1ToUser = payable1ToUser - 220 finney;
 
-        poolFunds -= DEMO_payable1ToUser;
+        // poolFunds -= DEMO_payable1ToUser;
 
-        msg.sender.transfer(DEMO_payable1ToUser);
+        //msg.sender.transfer(DEMO_payable1ToUser); 
     }
     
-    uint public payable1ToUser;
-    uint public DEMO_payable1ToUser;
+    // uint public payable1ToUser;
+    // uint public DEMO_payable1ToUser;
 
     function getAliveEscrows()
         public 
@@ -266,7 +266,6 @@ contract Escrow {
         public
         payable  
     {
-        pool = Pool(_addressPool);
         addressPool = _addressPool;
         beneficiary = _beneficiary;
         bid = msg.value;
@@ -288,6 +287,7 @@ contract Escrow {
         payable
         receivablesTransfer(msg.value == auctionReceivable)
     {
+        pool = Pool(_addressPool);
         addressPool.call.value(msg.value).gas(3000)();
         pool.completedAuctionUpdate_transferPayable2(
             newAsk, bid, auctionReceivable, beneficiary
