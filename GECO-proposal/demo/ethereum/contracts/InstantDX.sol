@@ -18,7 +18,7 @@ contract Pool {
     uint public accruedInterest;
     uint public reserveFunds;
     
-    uint public InterestRate = 1;  
+    uint public interestRate = 1;  
 
     uint public lvr = 1;  
 
@@ -52,7 +52,6 @@ contract Pool {
         payable 
     {
         poolFunds += msg.value;
-        
     }
  
     
@@ -63,18 +62,18 @@ contract Pool {
         _;
     }
     
-    function adjustlvr(uint _lvr)  
+    function adjustLVR(uint _lvr)  
         external
         managerOnly
     {
         lvr = _lvr;
     }
     
-    function adjustInterestRate(uint _InterestRate)  
+    function adjustInterestRate(uint _interestRate)  
         external
         managerOnly
     {
-        InterestRate = _InterestRate;
+        interestRate = _interestRate;
     }
 
 
@@ -99,7 +98,7 @@ contract Pool {
         }
     }
     
-    function getproviders()
+    function getProviders()
         public 
         view 
         returns (address[])
@@ -108,7 +107,7 @@ contract Pool {
     }
 
     
-    modifier sufficientpoolFunds() {
+    modifier sufficientPoolFunds() {
         require(msg.value <= poolFunds,
                 "Denied: InstantDXPool insufficient funds"
         ); 
@@ -118,7 +117,7 @@ contract Pool {
     function createEscrow()  
         external
         payable
-        sufficientpoolFunds
+        sufficientPoolFunds
     {
         uint bid = msg.value;
         address newEscrow = (new Escrow).value(bid)(address(this), msg.sender);
@@ -268,9 +267,6 @@ contract Escrow {
         payable  
     {
         pool = Pool(_addressPool);
-        require(pool.poolFunds() >= msg.value,
-                "Denied: Insufficient funds in pool"
-        );
         addressPool = _addressPool;
         beneficiary = _beneficiary;
         bid = msg.value;
