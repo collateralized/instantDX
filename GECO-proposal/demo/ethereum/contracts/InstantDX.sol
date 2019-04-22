@@ -1,6 +1,6 @@
-pragma solidity ^0.4.25;
+pragma solidity 0.4.25;
 
-// lastAsk: 99907700000000000 wei
+// lastAsk: 99907700000000000 wei 
 
 // Pool Deployed on Rinkeby: 0x32DdbDD6ef19591aF11C5F359418a00Db24432d3
 
@@ -131,18 +131,18 @@ contract Pool {
             aliveEscrowsToggler = true; 
         }
 
-        // mappingAliveEscrows[newEscrow] = true;
+        mappingAliveEscrows[newEscrow] = true;
 
-        // payable1ToUser  = bid - (lastAsk * (bid / (10**18)) * lvr); 
-        // DEMO_payable1ToUser = payable1ToUser - 220 finney;
+        payable1ToUser = bid - (lastAsk * (bid / 10**18) * lvr); 
+        DEMO_payable1ToUser = payable1ToUser - 220 finney;
 
-        // poolFunds -= DEMO_payable1ToUser;
+        poolFunds -= DEMO_payable1ToUser;
 
-        //msg.sender.transfer(DEMO_payable1ToUser); 
+        msg.sender.transfer(DEMO_payable1ToUser); 
     }
     
-    // uint public payable1ToUser;
-    // uint public DEMO_payable1ToUser;
+    uint public payable1ToUser;
+    uint public DEMO_payable1ToUser;
 
     function getAliveEscrows()
         public 
@@ -255,9 +255,6 @@ contract Pool {
 // DEMO: no interface with DutchX and DutchX oracle
 
 contract Escrow {
-    // Type Pool contract (solidity contracts are like classes)
-    Pool pool;
-
     address public beneficiary;
     address public addressPool;
     uint public bid;
@@ -287,15 +284,12 @@ contract Escrow {
         payable
         receivablesTransfer(msg.value == auctionReceivable)
     {
-        pool = Pool(_addressPool);
         addressPool.call.value(msg.value).gas(3000)();
-        pool.completedAuctionUpdate_transferPayable2(
+        Pool(addressPool).completedAuctionUpdate_transferPayable2(
             newAsk, bid, auctionReceivable, beneficiary
         );
         
         kill();
     }
 }
-
-
 

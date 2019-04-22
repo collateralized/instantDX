@@ -36,7 +36,7 @@ const GAS2 = "2000000";
 const BUY_TOKEN = "GNO";
 const SELL_TOKEN = "ETH";
 const MINIMUM_CONTRIBUTION = '1000000000000000000';  // 1 ETH
-const LAST_ASK = '9500000000000000000';  // / 1 ETH = 9.5 GNO
+const LAST_ASK = '99907700000000000';  // / 1 ETH = 0.99 GNO
 const NEW_ASK = "10000000000000000000";  // 1 ETH = 10 GNO
 const SEED_FUNDING = '2000000000000000000';  // 2 ETH
 const CONTRIBUTION = '1000000000000000000';  // 1 ETH
@@ -133,18 +133,21 @@ describe("InstantDX", () => {
      and processes instant payout 1`, async () => {
     let funds = await pool.methods.poolFunds().call();
     funds = web3.utils.fromWei(funds, 'ether');
-    console.log(`Pool Funds:                                             ${funds} ${SELL_TOKEN}`);
+    console.log(`Pool Funds:                                                       ${funds} ${SELL_TOKEN}`);
     
       // Pre Sell Order balance
     let balance1 = await web3.eth.getBalance(accounts[2]);
     balance1 = web3.utils.fromWei(balance1, "ether");
     balance1 = parseFloat(balance1)
-    console.log(`Balance ${SELL_TOKEN} prior to sell order:              ${balance1 - balance1 + bid} ${SELL_TOKEN}`);
+    console.log(`Seller's balance ${SELL_TOKEN} prior to sell order:                       ${balance1} ${SELL_TOKEN}`);
     
     let sellOrderVolume = BID;
     sellOrderVolume = web3.utils.fromWei(sellOrderVolume, "ether");
-    console.log(`Sell Order Volume:                                      ${sellOrderVolume} ${SELL_TOKEN}`);
+    console.log(`Sell Order Volume:                                                ${sellOrderVolume} ${SELL_TOKEN}`);
     
+    // Last Ask 
+    console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${LAST_ASK / 10**18}`)
+
     // Deploy escrow
     await pool.methods.createEscrow().send({
       value: BID,
@@ -168,20 +171,28 @@ describe("InstantDX", () => {
 
     
     // Check if instant payout1 was processed
-    let payout1 = await pool.methods.DEMO_payable1ToUser().call();
-    payout1 = web3.utils.fromWei(payout1, "ether");
-    payout1 = parseFloat(payout1)
-    console.log(`Instant payout1:                                        ${payout1} ${BUY_TOKEN}`);
+    let payout1Wei = await pool.methods.DEMO_payable1ToUser().call();
+    let payout1BuyToken = web3.utils.fromWei(payout1Wei, "ether");
+    payout1BuyToken = parseFloat(payout1BuyToken);
+    console.log(`Instant payout1:                                                  ${payout1BuyToken} ETH-${BUY_TOKEN}`);
     
+    // Pool funds after payout1
+    let funds2 = await pool.methods.poolFunds().call();
+    funds2 = web3.utils.fromWei(funds2, "ether");
+    funds2 = parseFloat(funds2);
+    console.log(`Pool Funds after instant payout:                                  ${funds2} ${SELL_TOKEN}`);
+
     let balance2 = await web3.eth.getBalance(accounts[2]);
     balance2 = web3.utils.fromWei(balance2, "ether");
     balance2 = parseFloat(balance2)
-    console.log(`Balance after sell order submission and instant payout: ${balance2} ${BUY_TOKEN}`);
+    console.log(`Seller's balance after sell order submission and instant payout: ${balance2} ${SELL_TOKEN}
+                                                                  ${payout1BuyToken} ETH-${BUY_TOKEN}`
+    );
     
     let gasLimit = web3.utils.fromWei(GAS1, "ether");
     gasLimit = parseFloat(gasLimit);
 
-    let expectedBalance2 = balance1 - sellOrderVolume - gasLimit + payout1;
+    let expectedBalance2 = balance1 - sellOrderVolume - gasLimit + payout1BuyToken;
     assert(balance2 + 0.1 > expectedBalance2
            && balance2 - 0.1 < expectedBalance2
     );
