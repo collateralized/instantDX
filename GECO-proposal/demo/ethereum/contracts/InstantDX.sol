@@ -2,6 +2,7 @@ pragma solidity ^0.4.25;
 
 // lastAsk: 99907700000000000 wei
 
+// Pool Deployed on Rinkeby: 0x32DdbDD6ef19591aF11C5F359418a00Db24432d3
 
 // Contract Pool
 contract Pool {
