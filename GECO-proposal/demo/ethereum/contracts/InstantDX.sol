@@ -1,6 +1,6 @@
 pragma solidity 0.4.25;
 
-// lastAsk: 99907700000000000 wei 
+// lastAsk GNO: 99907700000000000 wei - 0.09 ether
 
 // Pool Deployed on Rinkeby: 0x32DdbDD6ef19591aF11C5F359418a00Db24432d3
 
@@ -18,25 +18,28 @@ contract Pool {
     uint public accruedInterest;
     uint public reserveFunds;
     
+    // @Leo - should be 0.005
     uint public interestRate = 1;  
 
-    uint public lvr = 1;  
+    // @Leo - should be 0.8
+    uint public lvrNumerator = 80;
+    uint public lvrDenominator = 100;  
 
-    uint public lastAsk;  
-    
+    uint public lastAskNumerator = 99;
+    uint public lastAskDenominator = 1000;
+
     address[2] public aliveEscrows;
     mapping(address => bool) public mappingAliveEscrows;
     bool internal aliveEscrowsToggler = false;  
 
-   
-    constructor(uint _minimumContribution, uint _lastAsk)  
+   // set parameters for last ask here
+    constructor(uint _minimumContribution)  
         public
         payable  
     {
         manager = msg.sender;
         
         minimumContribution = _minimumContribution;  
-        lastAsk = _lastAsk;
         
         poolFunds = msg.value;
         
@@ -62,12 +65,12 @@ contract Pool {
         _;
     }
     
-    function adjustLVR(uint _lvr)  
+    /*function adjustLVR(uint _lvr)  
         external
         managerOnly
     {
-        lvr = _lvr;
-    }
+        //lvr = _lvr;
+    }*/
     
     function adjustInterestRate(uint _interestRate)  
         external
@@ -133,8 +136,10 @@ contract Pool {
 
         mappingAliveEscrows[newEscrow] = true;
 
-        payable1ToUser = bid - (lastAsk * (bid / 10**18) * lvr); 
-        DEMO_payable1ToUser = payable1ToUser - 220 finney;
+        // Leo's help needed
+        // example: 0.09 ether lastAsk * 1 ether bid * 0.8 lvr
+        payable1ToUser = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
+        DEMO_payable1ToUser = payable1ToUser;
 
         poolFunds -= DEMO_payable1ToUser;
 
@@ -166,17 +171,17 @@ contract Pool {
     }
 
     
-    function completedAuctionUpdate_transferPayable2(
+    /*function completedAuctionUpdate_transferPayable2(
         uint newAsk, uint bid, uint _auctionReceivable, address beneficiary
     )
         external
         escrowOnly
     {
-        lastAsk = newAsk; 
+        lastAskNumerator = newAsk; 
         
-        uint _payable1ToUser  = bid - (lastAsk * (bid / (10**18)) * lvr);  
+        uint _payable1ToUser  = bid - (lastAskNumerator * (bid / (10**18)) * lvr);  
     
-        uint _DEMO_payable1ToUser = _payable1ToUser - 220 finney;  
+        //uint _DEMO_payable1ToUser = _payable1ToUser - 220 finney;  
 
         uint auctionReceivable = _auctionReceivable; 
         
@@ -190,8 +195,8 @@ contract Pool {
         
         poolFunds -= DEMO_payable2ToUser + DEMO_interest;
 
-        beneficiary.transfer(DEMO_payable2ToUser);  
-    }
+        beneficiary.transfer(DEMO_payable2ToUser); 
+    }*/
     
     uint public DEMO_payable2ToUser;
 
@@ -279,7 +284,7 @@ contract Escrow {
         _;
     }
 
-    function settleAndKill(uint auctionReceivable, uint newAsk)
+    /*function settleAndKill(uint auctionReceivable, uint newAsk)
         external
         payable
         receivablesTransfer(msg.value == auctionReceivable)
@@ -290,6 +295,6 @@ contract Escrow {
         );
         
         kill();
-    }
+    }*/
 }
 

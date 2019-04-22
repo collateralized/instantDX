@@ -63,7 +63,7 @@ beforeEach(async () => {
   pool = await new web3.eth.Contract(JSON.parse(compiledPool.interface))
     .deploy({
         data: compiledPool.bytecode,
-        arguments:[MINIMUM_CONTRIBUTION, LAST_ASK] 
+        arguments:[MINIMUM_CONTRIBUTION] 
     })
     .send({
         value: SEED_FUNDING,
@@ -84,8 +84,8 @@ describe("InstantDX", () => {
     const minimum = await pool.methods.minimumContribution().call();
     assert.equal(MINIMUM_CONTRIBUTION, minimum);
 
-    const lastAsk = await pool.methods.lastAsk().call();
-    assert.equal(LAST_ASK, lastAsk);
+    /*const lastAsk = await pool.methods.lastAsk().call();
+    assert.equal(LAST_ASK, lastAsk);*/
 
     const seed = await pool.methods.poolFunds().call();
     assert.equal(SEED_FUNDING, seed);
@@ -146,8 +146,8 @@ describe("InstantDX", () => {
     console.log(`Sell Order Volume:                                                ${sellOrderVolume} ${SELL_TOKEN}`);
     
     // Last Ask 
-    console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${LAST_ASK / 10**18}`)
-
+    console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${await pool.methods.lastAskNumerator().call()}`)
+    
     // Deploy escrow
     await pool.methods.createEscrow().send({
       value: BID,
