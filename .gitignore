@@ -1,5 +1,3 @@
-.DS_Store
-node_modules/
 deploy.js
 
 *.swp
@@ -45,3 +43,6 @@ build/
 # IntelliJ IDE
 .idea
 
+# docsite artifacts
+docsite-build
+docs/api
