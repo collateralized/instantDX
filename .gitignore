@@ -36,6 +36,8 @@ build/
 
 # macOS
 .DS_Store
+*.icloud
+
 
 # truffle
 .node-xmlhttprequest-*
