@@ -206,17 +206,21 @@ contract Pool {
         external
         escrowOnly
     {
+        // Set new ask price discovered in auction
         lastAskNumerator = newAskNumerator;
         
-        uint _payable1ToUser  = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator);
-
-        uint auctionReceivable = _auctionReceivable;
+        // Retain Interest in accruedInterest pot
+        uint interest = (_auctionReceivable * interestRateNumerator) / interestRateDenominator;
+        accruedInterest += interest;
         
-        payable2ToUser = auctionReceivable - _payable1ToUser;  
+        // Calculate payout2
+        payable2ToUser = _auctionReceivable - _payable1ToUser - interest;  
         
+        // Update poolFunds to reflect payout2 and interest accrued to accruedInterest pot
+        poolFunds -= payable2ToUser + interest;
+        
+        // Deregister Escrow from mappingAliveEscrows
         deregisterEscrow(msg.sender);
-        
-        poolFunds -= payable2ToUser;
 
         beneficiary.transfer(payable2ToUser); 
     }
