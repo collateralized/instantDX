@@ -1,4 +1,4 @@
-pragma solidity 0.4.25;
+pragma solidity 0.5.6;
 
 // lastAsk GNO: 99907700000000000 wei - 0.09 ether
 
@@ -9,7 +9,7 @@ contract Pool {
     
     address public manager;
 
-    address[] public providers;
+    address payable[] public providers;
     mapping(address => uint) public mappingProvidersStake;
     mapping(address => bool) public mappingProvidersBOOL;
     
@@ -66,10 +66,17 @@ contract Pool {
         mappingProvidersBOOL[msg.sender] = true;
     }
 
+    modifier escrowOnly() {
+        require(mappingAliveEscrows[msg.sender],
+                "Denied: only callable from Escrow address"
+        );  
+        _;
+    }
     
     // Fallback function: https://www.bitdegree.org/learn/solidity-fallback-functions
     function ()
-        public  // escrowOnly??
+        external
+        escrowOnly
         payable 
     {
         poolFunds += msg.value;
@@ -124,7 +131,7 @@ contract Pool {
     function getProviders()
         public 
         view 
-        returns (address[])
+        returns (address payable[] memory)
     {
         return providers;
     }
@@ -152,19 +159,19 @@ contract Pool {
         uint bid = msg.value - interest;
 
         // Deploy sell order escrow instance
-        address newEscrow = (new Escrow).value(bid)(address(this), msg.sender);
+       Escrow newEscrow = (new Escrow).value(bid)(address(this), msg.sender);
         
         // To manage aliveEscrows[2] static array size of 2
         if (aliveEscrowsToggler == true) {  
-            aliveEscrows[1] = newEscrow;
+            aliveEscrows[1] = address(newEscrow);
             aliveEscrowsToggler = false;  
         }
         else {
-            aliveEscrows[0] = newEscrow;
+            aliveEscrows[0] = address(newEscrow);
             aliveEscrowsToggler = true; 
         }
 
-        mappingAliveEscrows[newEscrow] = true;
+        mappingAliveEscrows[address(newEscrow)] = true;
 
         // Calculate: payout1 = P0 * Q * LVR
         // Example: 0.09 ether lastAsk * 1 ether bid * 0.8 lvr
@@ -180,7 +187,7 @@ contract Pool {
     function getAliveEscrows()
         public 
         view 
-        returns (address[2])
+        returns (address[2] memory)
     {
         return aliveEscrows;
     }
@@ -191,17 +198,10 @@ contract Pool {
         mappingAliveEscrows[aliveEscrow] = false;
     }
 
-    modifier escrowOnly() {
-        require(mappingAliveEscrows[msg.sender],
-                "Denied: only callable from Escrow address"
-        );  
-        _;
-    }
-
     uint public payable2ToUser;
 
     function completedAuctionUpdate_transferPayable2(
-        uint newAskNumerator, uint bid, uint _auctionReceivable, address beneficiary
+        uint newAskNumerator, uint bid, uint _auctionReceivable, address payable beneficiary
     )
         external
         escrowOnly
@@ -238,11 +238,18 @@ contract Pool {
 
         // Update accruedInterest pot balance
         accruedInterest -= payableToProviders + payableToReserve;
-
+        
         uint length = providers.length;
         
+        if (accruedInterest % length != 0) {
+            providerPayout = (accruedInterest / length) + 1;
+        }
+        else {
+            providerPayout = accruedInterest / length;
+        } 
+
         for (uint i = 0; i < length; i++) {
-            address provider = providers[i];  
+            address payable provider = providers[i];  
             
             // @Leo: help needed: calculate share of providerStake in poolFunds
             // uint providerShare = mappingProvidersStake[provider] / poolFunds;
@@ -250,12 +257,6 @@ contract Pool {
             
             // DEMO version: needs rationalNumbers fixing
             // Solidity division truncates towards 0
-            if (accruedInterest % length != 0) {
-                providerPayout = (accruedInterest / length) + 1;
-            }
-            else {
-                providerPayout = accruedInterest / length;
-            } 
 
             provider.transfer(providerPayout);
         }
@@ -295,11 +296,11 @@ contract Pool {
 // DEMO: no interface with DutchX and DutchX oracle
 
 contract Escrow {
-    address public beneficiary;
-    address public addressPool;
+    address payable public beneficiary;
+    address payable public addressPool;
     uint public bid;
 
-    constructor(address _addressPool, address _beneficiary)
+    constructor(address payable _addressPool, address payable _beneficiary)
         public
         payable  
     {
@@ -311,7 +312,7 @@ contract Escrow {
     function kill()
         private
     {
-        selfdestruct(address(this));
+        selfdestruct(addressPool);
     }
 
     modifier receivablesTransfer(bool condition) {
@@ -324,7 +325,9 @@ contract Escrow {
         payable
         receivablesTransfer(msg.value == auctionReceivable)
     {
-        addressPool.call.value(msg.value).gas(3000)();
+        (bool success, bytes memory data) = addressPool.call.value(msg.value).gas(3000)("");
+        if (!success)
+            revert();
         Pool(addressPool).completedAuctionUpdate_transferPayable2(
             newAsk, bid, auctionReceivable, beneficiary
         );

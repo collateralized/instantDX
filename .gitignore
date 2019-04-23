@@ -1,3 +1,49 @@
 .DS_Store
 node_modules/
 deploy.js
+.DS_Store
+node_modules/
+deploy.js
+
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+allFiredEvents
+scTopics
+
+# Coverage directory used by tools like istanbul
+coverage
+coverage.json
+coverageEnv
+
+# node-waf configuration
+.lock-wscript
+
+# Dependency directory
+node_modules
+
+# Debug log from npm
+npm-debug.log
+
+# local env variables
+.env
+
+# truffle build directory
+build/
+
+# macOS
+.DS_Store
+
+# truffle
+.node-xmlhttprequest-*
+
+# IntelliJ IDE
+.idea
