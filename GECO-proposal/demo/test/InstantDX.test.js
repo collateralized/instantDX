@@ -32,6 +32,7 @@ const compiledEscrow = require("../ethereum/build/Escrow.json");
 // Currency = ETH
 const GAS1 = "1000000";
 const GAS2 = "2000000";
+
 const BUY_TOKEN = "GNO";
 const SELL_TOKEN = "ETH";
 const MINIMUM_CONTRIBUTION = '1000000000000000000';  // 1 ETH
@@ -152,7 +153,7 @@ describe("InstantDX", () => {
     console.log(`Seller's balance ${SELL_TOKEN} prior to sell order:                       ${balance1} ${SELL_TOKEN}`);
     
     // Log sell order volume aka bid
-    console.log(`Sell Order Volume:                                                ${parseInt(BID) / 10**18} ${SELL_TOKEN}`);
+    console.log(`Sell Order Volume:                                                ${BID / 10**18} ${SELL_TOKEN}`);
     
     // Last Ask 
     console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${await pool.methods.lastAskNumerator().call()}/${await pool.methods.lastAskDenominator().call()}`)
@@ -181,7 +182,7 @@ describe("InstantDX", () => {
 
     // Check if instant payout1 was processed
     let payout1 = await pool.methods.payable1ToUser().call();
-    payout1 = web3.utils.fromWei(payout1Wei, "ether");
+    payout1 = web3.utils.fromWei(payout1, "ether");
     payout1 = parseFloat(payout1);
     console.log(`Instant payout1:                                                  ${payout1} ETH-${BUY_TOKEN}`);
     
@@ -201,7 +202,7 @@ describe("InstantDX", () => {
     let gasLimit = web3.utils.fromWei(GAS1, "ether");
     gasLimit = parseFloat(gasLimit);
 
-    let expectedBalance2 = balance1 - sellOrderVolume - gasLimit + payout1;
+    let expectedBalance2 = balance1 - parseInt(BID / 10**18) - gasLimit + payout1;
     assert(balance2 + 0.1 > expectedBalance2
            && balance2 - 0.1 < expectedBalance2
     );
