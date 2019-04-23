@@ -32,13 +32,14 @@ const compiledEscrow = require("../ethereum/build/Escrow.json");
 // Currency = ETH
 const GAS1 = "1000000";
 const GAS2 = "2000000";
-
 const BUY_TOKEN = "GNO";
 const SELL_TOKEN = "ETH";
 const MINIMUM_CONTRIBUTION = '1000000000000000000';  // 1 ETH
 const SEED_FUNDING = '2000000000000000000';  // 2 ETH
 const CONTRIBUTION = '1000000000000000000';  // 1 ETH
 const BELOW_MINIMUM = "900000000000000000";  // 0.9 ETH
+const BID = "1000000000000000000";  // 1 ETH
+
 const LAST_ASK_NUMERATOR = 99;  // 1 ETH = 0.99 GNO
 const LAST_ASK_DENOMINATOR = 1000 // 1 ETH = 0.99 GNO
 const NEW_ASK_NUMERATOR = 90;  // 1 ETH = 0.90 GNO
@@ -49,7 +50,6 @@ const INTEREST_RATE_NUMERATOR = 5;  // 0.005 interest rate
 const INTEREST_RATE_DENOMINATOR = 1000;  // 0.005 interest rate
 const INTEREST_PAYOUT_RATE_NUMERATOR = 90;  // 0.9 interest payout rate
 const INTEREST_PAYOUT_RATE_DENOMINATOR = 100; // 0.9 interest payout rate
-const BID = 1000000000000000000;  // 1 ETH
 
 let accounts; // accounts that exist on local Ganache network.
 let pool; // reference to deployed instance of pool contract.
@@ -151,23 +151,15 @@ describe("InstantDX", () => {
     balance1 = parseFloat(balance1)
     console.log(`Seller's balance ${SELL_TOKEN} prior to sell order:                       ${balance1} ${SELL_TOKEN}`);
     
-    // Interest deducted from sell order
-    let interest = (BID * INTEREST_RATE_NUMERATOR) / INTEREST_RATE_DENOMINATOR;
-
-    let sellOrderVolume = BID - interest;
-    console.log(`Sell Order Volume:                                                ${sellOrderVolume / 10**18} ${SELL_TOKEN}`);
+    // Log sell order volume aka bid
+    console.log(`Sell Order Volume:                                                ${parseInt(BID) / 10**18} ${SELL_TOKEN}`);
     
     // Last Ask 
     console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${await pool.methods.lastAskNumerator().call()}/${await pool.methods.lastAskDenominator().call()}`)
-    
-    // Check accruedInterest balance before sell order
-    let accruedInterest = await pool.methods.accruedInterest().call();
-    console.log(`Interest pot balance before sell order:                                  ${accruedInterest / 10**18} ${SELL_TOKEN}`)
-    assert.equal(0, accruedInterest);
 
     // Deploy escrow
     await pool.methods.createEscrow().send({
-      value: sellOrderVolume,
+      value: BID,
       from: accounts[2],
       gas: GAS1
     });
@@ -182,13 +174,10 @@ describe("InstantDX", () => {
     
     // Check deployed escrows state variable getters
     const escrowed = await escrow.methods.bid().call();
-    // assert.equal(sellOrderVolume, escrowed);
+    assert.equal(BID, escrowed);
 
     const beneficiary = await escrow.methods.beneficiary().call();
     assert.equal(accounts[2], beneficiary);
-
-    // Check if interest was retained and added to accruedInterest
-    assert.equal(interest, accruedInterest);
 
     // Check if instant payout1 was processed
     let payout1 = await pool.methods.payable1ToUser().call();
@@ -242,5 +231,15 @@ describe("InstantDX", () => {
 
   })*/
 
+    // Interest deducted from sell order
+    //let interest = (BID * INTEREST_RATE_NUMERATOR) / INTEREST_RATE_DENOMINATOR;
+
+    // Check accruedInterest balance before sell order
+    // let accruedInterest = await pool.methods.accruedInterest().call();
+    // console.log(`Interest pot balance before sell order:                                  ${accruedInterest / 10**18} ${SELL_TOKEN}`)
+    // assert.equal(0, accruedInterest);
+
+    // Check if interest was retained and added to accruedInterest
+    // assert.equal(interest, accruedInterest);
 
 });

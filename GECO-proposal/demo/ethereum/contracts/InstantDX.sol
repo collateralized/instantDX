@@ -209,6 +209,8 @@ contract Pool {
         // Set new ask price discovered in auction
         lastAskNumerator = newAskNumerator;
         
+        uint _payable1ToUser  = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator);
+
         // Retain Interest in accruedInterest pot
         uint interest = (_auctionReceivable * interestRateNumerator) / interestRateDenominator;
         accruedInterest += interest;
