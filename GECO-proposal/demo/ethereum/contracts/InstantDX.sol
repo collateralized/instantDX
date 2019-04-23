@@ -144,15 +144,8 @@ contract Pool {
         payable
         sufficientPoolFunds
     {   
-        // Retain Interest in accruedInterest pot
-        uint interest = (msg.value * interestRateNumerator) / interestRateDenominator;
-        accruedInterest += interest;
-
-        // The sell volume that is placed on DutchX by InstantDX on seller's behalf
-        uint bid = msg.value - interest;
-
         // Deploy sell order escrow instance
-        address newEscrow = (new Escrow).value(bid)(address(this), msg.sender);
+        address newEscrow = (new Escrow).value(msg.value)(address(this), msg.sender);
         
         // To manage aliveEscrows[2] static array size of 2
         if (aliveEscrowsToggler == true) {  
@@ -168,7 +161,7 @@ contract Pool {
 
         // Calculate: payout1 = P0 * Q * LVR
         // Example: 0.09 ether lastAsk * 1 ether bid * 0.8 lvr
-        payable1ToUser = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
+        payable1ToUser = (lastAskNumerator * msg.value * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
 
         // Update pool funds to reflect processed payout1
         poolFunds -= payable1ToUser;
