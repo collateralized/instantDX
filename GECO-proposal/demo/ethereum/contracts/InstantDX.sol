@@ -1,6 +1,6 @@
 pragma solidity 0.4.25;
 
-// lastAsk: 99907700000000000 wei 
+// lastAsk GNO: 99907700000000000 wei - 0.09 ether
 
 // Pool Deployed on Rinkeby: 0x32DdbDD6ef19591aF11C5F359418a00Db24432d3
 
@@ -18,25 +18,46 @@ contract Pool {
     uint public accruedInterest;
     uint public reserveFunds;
     
-    uint public interestRate = 1;  
+    // @Leo - should be 0.005
+    uint public interestRateNumerator;
+    uint public interestRateDenominator;  
 
-    uint public lvr = 1;  
+    // @Leo - should be 0.8
+    uint public lvrNumerator;
+    uint public lvrDenominator;  
 
-    uint public lastAsk;  
-    
+    uint public lastAskNumerator;
+    uint public lastAskDenominator;
+
+    // Interest vs. Reserve Ratio
+    uint public interestPayoutRateNumerator;
+    uint public interestPayoutRateDenominator;
+
     address[2] public aliveEscrows;
     mapping(address => bool) public mappingAliveEscrows;
     bool internal aliveEscrowsToggler = false;  
 
-   
-    constructor(uint _minimumContribution, uint _lastAsk)  
+   // set parameters for last ask here
+    constructor(uint _minimumContribution, 
+                uint _lastAskNumerator, uint _lastAskDenominator,
+                uint _lvrNumerator, uint _lvrDenominator,
+                uint _interestRateNumerator, uint _interestRateDenominator,
+                uint _interestPayoutRateNumerator, uint _interestPayoutRateDenominator
+    )  
         public
         payable  
     {
         manager = msg.sender;
         
-        minimumContribution = _minimumContribution;  
-        lastAsk = _lastAsk;
+        minimumContribution = _minimumContribution; 
+        lastAskNumerator = _lastAskNumerator;
+        lastAskDenominator = _lastAskDenominator; 
+        lvrNumerator= _lvrNumerator;
+        lvrDenominator = _lvrDenominator;
+        interestRateNumerator = _interestRateNumerator;
+        interestRateDenominator = _interestRateDenominator;
+        interestPayoutRateNumerator = _interestPayoutRateNumerator;
+        interestPayoutRateDenominator = _interestPayoutRateDenominator;
         
         poolFunds = msg.value;
         
@@ -62,18 +83,20 @@ contract Pool {
         _;
     }
     
-    function adjustLVR(uint _lvr)  
+    function adjustLVR(uint _lvrNumerator, uint _lvrDenominator)  
         external
         managerOnly
     {
-        lvr = _lvr;
+        lvrNumerator = _lvrNumerator;
+        lvrDenominator = _lvrDenominator;
     }
     
-    function adjustInterestRate(uint _interestRate)  
+    function adjustInterestRate(uint _interestRateNumerator, uint _interestRateDenominator)  
         external
         managerOnly
     {
-        interestRate = _interestRate;
+        interestRateNumerator = _interestRateNumerator;
+        interestRateDenominator = _interestRateDenominator;
     }
 
 
@@ -114,14 +137,17 @@ contract Pool {
         _;
     }
 
+    uint public payable1ToUser;
+    
     function createEscrow()  
         external
         payable
         sufficientPoolFunds
-    {
-        uint bid = msg.value;
-        address newEscrow = (new Escrow).value(bid)(address(this), msg.sender);
+    {   
+        // Deploy sell order escrow instance
+        address newEscrow = (new Escrow).value(msg.value)(address(this), msg.sender);
         
+        // To manage aliveEscrows[2] static array size of 2
         if (aliveEscrowsToggler == true) {  
             aliveEscrows[1] = newEscrow;
             aliveEscrowsToggler = false;  
@@ -133,16 +159,16 @@ contract Pool {
 
         mappingAliveEscrows[newEscrow] = true;
 
-        payable1ToUser = bid - (lastAsk * (bid / 10**18) * lvr); 
-        DEMO_payable1ToUser = payable1ToUser - 220 finney;
+        // Calculate: payout1 = P0 * Q * LVR
+        // Example: 0.09 ether lastAsk * 1 ether bid * 0.8 lvr
+        payable1ToUser = (lastAskNumerator * msg.value * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
 
-        poolFunds -= DEMO_payable1ToUser;
+        // Update pool funds to reflect processed payout1
+        poolFunds -= payable1ToUser;
 
-        msg.sender.transfer(DEMO_payable1ToUser); 
+        // Send Instant payout (payout1) to seller
+        msg.sender.transfer(payable1ToUser); 
     }
-    
-    uint public payable1ToUser;
-    uint public DEMO_payable1ToUser;
 
     function getAliveEscrows()
         public 
@@ -165,61 +191,74 @@ contract Pool {
         _;
     }
 
-    
+    uint public payable2ToUser;
+
     function completedAuctionUpdate_transferPayable2(
-        uint newAsk, uint bid, uint _auctionReceivable, address beneficiary
+        uint newAskNumerator, uint bid, uint _auctionReceivable, address beneficiary
     )
         external
         escrowOnly
     {
-        lastAsk = newAsk; 
+        // Set new ask price discovered in auction
+        lastAskNumerator = newAskNumerator;
         
-        uint _payable1ToUser  = bid - (lastAsk * (bid / (10**18)) * lvr);  
-    
-        uint _DEMO_payable1ToUser = _payable1ToUser - 220 finney;  
+        uint _payable1ToUser  = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator);
 
-        uint auctionReceivable = _auctionReceivable; 
+        // Retain Interest in accruedInterest pot
+        uint interest = (_auctionReceivable * interestRateNumerator) / interestRateDenominator;
+        accruedInterest += interest;
         
-        uint DEMO_interest = 50 finney;  
+        // Calculate payout2
+        payable2ToUser = _auctionReceivable - _payable1ToUser - interest;  
         
-        DEMO_payable2ToUser = auctionReceivable - _DEMO_payable1ToUser - DEMO_interest;  
+        // Update poolFunds to reflect payout2 and interest accrued to accruedInterest pot
+        poolFunds -= payable2ToUser + interest;
         
-        accruedInterest += DEMO_interest; 
-        
+        // Deregister Escrow from mappingAliveEscrows
         deregisterEscrow(msg.sender);
-        
-        poolFunds -= DEMO_payable2ToUser + DEMO_interest;
 
-        beneficiary.transfer(DEMO_payable2ToUser);  
+        beneficiary.transfer(payable2ToUser); 
     }
-    
-    uint public DEMO_payable2ToUser;
 
-
+    uint public providerPayout;
+    uint public payableToReserve;
 
     function interestPayout() 
         external
     {
-        uint payableToProviders = accruedInterest / 2;  
+        // Calculate interest payments payableToProviders in accordance with interestPayoutRate
+        uint payableToProviders = (accruedInterest * interestPayoutRateNumerator) / interestPayoutRateDenominator;  
+        
+        // Calculate interest payments payableToReserve in accordance with interestPayoutRate
+        payableToReserve = accruedInterest - payableToProviders; 
+
+        // Update reserveFunds pot balance
+        reserveFunds += payableToReserve;
+
+        // Update accruedInterest pot balance
+        accruedInterest -= payableToProviders + payableToReserve;
 
         uint length = providers.length;
         
         for (uint i = 0; i < length; i++) {
             address provider = providers[i];  
             
-            providerPayout = payableToProviders / length;  
+            // @Leo: help needed: calculate share of providerStake in poolFunds
+            // uint providerShare = mappingProvidersStake[provider] / poolFunds;
+            // providerPayout = payableToProviders * providerShare;  
             
+            // DEMO version: needs rationalNumbers fixing
+            // Solidity division truncates towards 0
+            if (accruedInterest % length != 0) {
+                providerPayout = (accruedInterest / length) + 1;
+            }
+            else {
+                providerPayout = accruedInterest / length;
+            } 
+
             provider.transfer(providerPayout);
         }
-        
-        payableToReserve = payableToProviders;  
-        reserveFunds += payableToReserve;
-
-        accruedInterest -= payableToProviders + payableToReserve;
     }
-    uint public providerPayout;
-    uint public payableToReserve;
-
 
     modifier providersOnly() {
         require(mappingProvidersBOOL[msg.sender] == true);
