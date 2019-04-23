@@ -201,7 +201,8 @@ contract Pool {
     )
         external
         escrowOnly
-    {
+    {   
+        // Set new ask price discovered in DutchX auction
         lastAskNumerator = newAskNumerator;
         
         uint _payable1ToUser  = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator);
@@ -216,6 +217,9 @@ contract Pool {
         // Update poolFunds to reflect payout2 and interest accrued to accruedInterest pot
         poolFunds -= payable2ToUser + interest;
         
+        // Deregister Escrow from mappingAliveEscrows
+        deregisterEscrow(msg.sender);
+
         // Transfer payout2 to seller
         beneficiary.transfer(payable2ToUser); 
     }
