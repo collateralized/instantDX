@@ -36,21 +36,20 @@ const GAS2 = "2000000";
 const BUY_TOKEN = "GNO";
 const SELL_TOKEN = "ETH";
 const MINIMUM_CONTRIBUTION = '1000000000000000000';  // 1 ETH
-const LAST_ASK = '99907700000000000';  // / 1 ETH = 0.99 GNO
-const NEW_ASK = "10000000000000000000";  // 1 ETH = 10 GNO
 const SEED_FUNDING = '2000000000000000000';  // 2 ETH
 const CONTRIBUTION = '1000000000000000000';  // 1 ETH
 const BELOW_MINIMUM = "900000000000000000";  // 0.9 ETH
-const BID = '1000000000000000000';  // 1 ETH
-
-
-
-let bid = web3.utils.fromWei(BID, 'ether');
-bid = parseFloat(bid);
-let newAsk = web3.utils.fromWei(NEW_ASK, 'ether');
-newAsk = parseFloat(newAsk);
-const AUCTION_RECEIVABLE = bid * newAsk;
-const STRING_AUCTION_RECEIVABLE = '1000000000000000000';  // 1ETH/10GNO
+const LAST_ASK_NUMERATOR = 99;  // 1 ETH = 0.99 GNO
+const LAST_ASK_DENOMINATOR = 1000 // 1 ETH = 0.99 GNO
+const NEW_ASK_NUMERATOR = 90;  // 1 ETH = 0.90 GNO
+const NEW_ASK_DENOMINATOR = 1000;  // 1 ETH = 0.90 GNO
+const LVR_NUMERATOR = 80;  // 0.8 Loan-To-Value ratio
+const LVR_DENOMINATOR = 100;  // 0.8 Loan-To-Value ratio
+const INTEREST_RATE_NUMERATOR = 5;  // 0.005 interest rate
+const INTEREST_RATE_DENOMINATOR = 1000;  // 0.005 interest rate
+const INTEREST_PAYOUT_RATE_NUMERATOR = 90;  // 0.9 interest payout rate
+const INTEREST_PAYOUT_RATE_DENOMINATOR = 100; // 0.9 interest payout rate
+const BID = 1000000000000000000;  // 1 ETH
 
 let accounts; // accounts that exist on local Ganache network.
 let pool; // reference to deployed instance of pool contract.
@@ -63,7 +62,16 @@ beforeEach(async () => {
   pool = await new web3.eth.Contract(JSON.parse(compiledPool.interface))
     .deploy({
         data: compiledPool.bytecode,
-        arguments:[MINIMUM_CONTRIBUTION] 
+        arguments:[MINIMUM_CONTRIBUTION,
+                   LAST_ASK_NUMERATOR,
+                   LAST_ASK_DENOMINATOR,
+                   LVR_NUMERATOR,
+                   LVR_DENOMINATOR,
+                   INTEREST_RATE_NUMERATOR,
+                   INTEREST_RATE_DENOMINATOR,
+                   INTEREST_PAYOUT_RATE_NUMERATOR,
+                   INTEREST_PAYOUT_RATE_DENOMINATOR
+        ] 
     })
     .send({
         value: SEED_FUNDING,
@@ -77,15 +85,15 @@ describe("InstantDX", () => {
     assert.ok(pool.options.address);
   });
 
-  it("sets pool manager, minimum contribution, lastAsk and seeds pool", async () => {
+  it("sets pool manager, minimum contribution, lastAskNumerator and seeds pool", async () => {
     const manager = await pool.methods.manager().call();
     assert.equal(accounts[0], manager);
 
     const minimum = await pool.methods.minimumContribution().call();
     assert.equal(MINIMUM_CONTRIBUTION, minimum);
 
-    /*const lastAsk = await pool.methods.lastAsk().call();
-    assert.equal(LAST_ASK, lastAsk);*/
+    const lastAskNumerator = await pool.methods.lastAskNumerator().call();
+    assert.equal(LAST_ASK_NUMERATOR, lastAskNumerator);
 
     const seed = await pool.methods.poolFunds().call();
     assert.equal(SEED_FUNDING, seed);
@@ -129,28 +137,37 @@ describe("InstantDX", () => {
     }
   });
 
-  it(`allows anyone to deploy an escrow with a payable amount
-     and processes instant payout 1`, async () => {
+  it(`allows anyone to deploy an escrow with a payable bid amount,
+     it deducts interest and adds it to the interes pot and
+     it processes instant payout 1`, async () => {
+    // Pool Funds Pre Sell Order and instant payout1
     let funds = await pool.methods.poolFunds().call();
     funds = web3.utils.fromWei(funds, 'ether');
     console.log(`Pool Funds:                                                       ${funds} ${SELL_TOKEN}`);
-    
-      // Pre Sell Order balance
+
+    // Seller's balance prior to Sell Order 
     let balance1 = await web3.eth.getBalance(accounts[2]);
     balance1 = web3.utils.fromWei(balance1, "ether");
     balance1 = parseFloat(balance1)
     console.log(`Seller's balance ${SELL_TOKEN} prior to sell order:                       ${balance1} ${SELL_TOKEN}`);
     
-    let sellOrderVolume = BID;
-    sellOrderVolume = web3.utils.fromWei(sellOrderVolume, "ether");
-    console.log(`Sell Order Volume:                                                ${sellOrderVolume} ${SELL_TOKEN}`);
+    // Interest deducted from sell order
+    let interest = (BID * INTEREST_RATE_NUMERATOR) / INTEREST_RATE_DENOMINATOR;
+
+    let sellOrderVolume = BID - interest;
+    console.log(`Sell Order Volume:                                                ${sellOrderVolume / 10**18} ${SELL_TOKEN}`);
     
     // Last Ask 
-    console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${await pool.methods.lastAskNumerator().call()}`)
+    console.log(`Last Ask price ${SELL_TOKEN}/${BUY_TOKEN}:                                           ${await pool.methods.lastAskNumerator().call()}/${await pool.methods.lastAskDenominator().call()}`)
     
+    // Check accruedInterest balance before sell order
+    let accruedInterest = await pool.methods.accruedInterest().call();
+    console.log(`Interest pot balance before sell order:                                  ${accruedInterest / 10**18} ${SELL_TOKEN}`)
+    assert.equal(0, accruedInterest);
+
     // Deploy escrow
     await pool.methods.createEscrow().send({
-      value: BID,
+      value: sellOrderVolume,
       from: accounts[2],
       gas: GAS1
     });
@@ -165,34 +182,37 @@ describe("InstantDX", () => {
     
     // Check deployed escrows state variable getters
     const escrowed = await escrow.methods.bid().call();
+    // assert.equal(sellOrderVolume, escrowed);
+
     const beneficiary = await escrow.methods.beneficiary().call();
-    assert.equal(BID, escrowed);
     assert.equal(accounts[2], beneficiary);
 
-    
+    // Check if interest was retained and added to accruedInterest
+    assert.equal(interest, accruedInterest);
+
     // Check if instant payout1 was processed
-    let payout1Wei = await pool.methods.DEMO_payable1ToUser().call();
-    let payout1BuyToken = web3.utils.fromWei(payout1Wei, "ether");
-    payout1BuyToken = parseFloat(payout1BuyToken);
-    console.log(`Instant payout1:                                                  ${payout1BuyToken} ETH-${BUY_TOKEN}`);
+    let payout1 = await pool.methods.payable1ToUser().call();
+    payout1 = web3.utils.fromWei(payout1Wei, "ether");
+    payout1 = parseFloat(payout1);
+    console.log(`Instant payout1:                                                  ${payout1} ETH-${BUY_TOKEN}`);
     
     // Pool funds after payout1
-    let funds2 = await pool.methods.poolFunds().call();
-    funds2 = web3.utils.fromWei(funds2, "ether");
-    funds2 = parseFloat(funds2);
-    console.log(`Pool Funds after instant payout:                                  ${funds2} ${SELL_TOKEN}`);
+    funds = await pool.methods.poolFunds().call();
+    funds = web3.utils.fromWei(funds, "ether");
+    funds = parseFloat(funds);
+    console.log(`Pool Funds after instant payout:                                  ${funds} ${SELL_TOKEN}`);
 
     let balance2 = await web3.eth.getBalance(accounts[2]);
     balance2 = web3.utils.fromWei(balance2, "ether");
     balance2 = parseFloat(balance2)
     console.log(`Seller's balance after sell order submission and instant payout: ${balance2} ${SELL_TOKEN}
-                                                                  ${payout1BuyToken} ETH-${BUY_TOKEN}`
+                                                                  ${payout1} ETH-${BUY_TOKEN}`
     );
     
     let gasLimit = web3.utils.fromWei(GAS1, "ether");
     gasLimit = parseFloat(gasLimit);
 
-    let expectedBalance2 = balance1 - sellOrderVolume - gasLimit + payout1BuyToken;
+    let expectedBalance2 = balance1 - sellOrderVolume - gasLimit + payout1;
     assert(balance2 + 0.1 > expectedBalance2
            && balance2 - 0.1 < expectedBalance2
     );
@@ -215,14 +235,12 @@ describe("InstantDX", () => {
     });
 
     const poolFunds = await web3.eth.getBalance(pool.options.address);
-    const payout1 = await pool.methods.DEMO_payable1ToUser().call();
+    const payout1 = await pool.methods.payable1ToUser().call();
     
     //assert(poolFunds >= SEED_FUNDING + AUCTION_RECEIVABLE - payout1);
     
 
   })*/
-
-  it 
 
 
 });
