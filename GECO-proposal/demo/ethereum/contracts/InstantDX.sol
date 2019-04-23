@@ -1,6 +1,9 @@
 pragma solidity 0.5.7;
 
-// lastAsk GNO: 99907700000000000 wei - 0.09 ether
+// 
+
+// lastAskNumerator GNO: 99 - 0.09 ether
+// lastAskDenominator GNO: 1000 - 0.09 ether
 
 // Pool Deployed on Rinkeby: 0x32DdbDD6ef19591aF11C5F359418a00Db24432d3
 
@@ -151,15 +154,8 @@ contract Pool {
         payable
         sufficientPoolFunds
     {   
-        // Retain Interest in accruedInterest pot
-        uint interest = (msg.value * interestRateNumerator) / interestRateDenominator;
-        accruedInterest += interest;
-
-        // The sell volume that is placed on DutchX by InstantDX on seller's behalf
-        uint bid = msg.value - interest;
-
-        // Deploy sell order escrow instance
-       Escrow newEscrow = (new Escrow).value(bid)(address(this), msg.sender);
+        // Deploy sell order escrow instance: msg.value == quantity sold (Q)
+       Escrow newEscrow = (new Escrow).value(msg.value)(address(this), msg.sender);
         
         // To manage aliveEscrows[2] static array size of 2
         if (aliveEscrowsToggler == true) {  
@@ -175,7 +171,7 @@ contract Pool {
 
         // Calculate: payout1 = P0 * Q * LVR
         // Example: 0.09 ether lastAsk * 1 ether bid * 0.8 lvr
-        payable1ToUser = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
+        payable1ToUser = (lastAskNumerator * msg.value * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
 
         // Update pool funds to reflect processed payout1
         poolFunds -= payable1ToUser;
@@ -209,15 +205,18 @@ contract Pool {
         lastAskNumerator = newAskNumerator;
         
         uint _payable1ToUser  = (lastAskNumerator * bid * lvrNumerator) / (lvrDenominator * lastAskDenominator);
-
-        uint auctionReceivable = _auctionReceivable;
         
-        payable2ToUser = auctionReceivable - _payable1ToUser;  
+        // Retain Interest in accruedInterest pot
+        uint interest = (_auctionReceivable * interestRateNumerator) / interestRateDenominator;
+        accruedInterest += interest;
         
-        deregisterEscrow(msg.sender);
+        // Calculate payout2
+        payable2ToUser = _auctionReceivable - _payable1ToUser - interest;  
         
-        poolFunds -= payable2ToUser;
-
+        // Update poolFunds to reflect payout2 and interest accrued to accruedInterest pot
+        poolFunds -= payable2ToUser + interest;
+        
+        // Transfer payout2 to seller
         beneficiary.transfer(payable2ToUser); 
     }
 
