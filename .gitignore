@@ -1,5 +1,8 @@
 deploy.js
 
+# weird stuff
+package 2.json
+
 *.swp
 *.swo
 
