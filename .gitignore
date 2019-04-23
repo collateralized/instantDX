@@ -22,6 +22,9 @@ coverageEnv
 # node-waf configuration
 .lock-wscript
 
+# Dependency directory
+node_modules
+
 # Debug log from npm
 npm-debug.log
 
@@ -39,3 +42,7 @@ build/
 
 # IntelliJ IDE
 .idea
+
+# docsite artifacts
+docsite-build
+docs/api
