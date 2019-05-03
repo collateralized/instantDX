@@ -2,8 +2,6 @@ pragma solidity 0.4.25;
 
 // lastAsk GNO: 99907700000000000 wei - 0.09 ether
 
-// Pool Deployed on Rinkeby: 0x32DdbDD6ef19591aF11C5F359418a00Db24432d3
-
 // Contract Pool
 contract Pool {
     
@@ -161,6 +159,8 @@ contract Pool {
 
         // Calculate: payout1 = P0 * Q * LVR
         // Example: 0.09 ether lastAsk * 1 ether bid * 0.8 lvr
+        
+        // TO DO: FIX payable1ToUser MATHS
         payable1ToUser = (lastAskNumerator * msg.value * lvrNumerator) / (lvrDenominator * lastAskDenominator); 
 
         // Update pool funds to reflect processed payout1
